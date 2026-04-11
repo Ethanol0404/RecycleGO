@@ -12,7 +12,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GROUPASGN">
         <activity
-            android:name=".MainActivity"
+            android:name=".Map"
+            android:exported="false" />
+        <activity
+            android:name=".FrameActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
