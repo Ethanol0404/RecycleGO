@@ -1,0 +1,73 @@
+[
+  {
+    "name": "IPC Recycling & Buy-Back Centre",
+    "address": "IPC Shopping Centre, Jalan PJU 7/2, Mutiara Damansara, 47800 Petaling Jaya, Selangor",
+    "latitude": 3.1554,
+    "longitude": 101.6115,
+    "supportedServices": "Paper, Plastic, Glass, Metal, E-Waste, Textile",
+    "operatingHours": "8:00 AM - 10:00 PM",
+    "services": {
+      "paper": true,
+      "plastic": true,
+      "glass": true,
+      "metal": true,
+      "ewaste": true,
+      "textile": true
+    }
+  },
+  {
+    "name": "Drive Thru Recycling Centre Alam Flora",
+    "address": "1, Jalan P5B, Presint 20, 62200 Putrajaya",
+    "latitude": 2.9264,
+    "longitude": 101.6841,
+    "supportedServices": "Paper, Plastic, Metal, Household Waste",
+    "operatingHours": "9:00 AM - 5:00 PM",
+    "services": {
+      "paper": true,
+      "plastic": true,
+      "metal": true,
+      "household": true
+    }
+  },
+  {
+    "name": "Cyberjaya Recycling Centre KDEBWM",
+    "address": "Persiaran Rimba Permai, 63000 Cyberjaya, Selangor",
+    "latitude": 2.9213,
+    "longitude": 101.6559,
+    "supportedServices": "Paper, Plastic, Metal, E-Waste, Clothing",
+    "operatingHours": "9:00 AM - 5:00 PM",
+    "services": {
+      "paper": true,
+      "plastic": true,
+      "metal": true,
+      "ewaste": true,
+      "clothing": true
+    }
+  },
+  {
+    "name": "Pusat Kitar Semula Presint 9",
+    "address": "Jalan P9B, Presint 9, 62250 Putrajaya",
+    "latitude": 2.9305,
+    "longitude": 101.6900,
+    "supportedServices": "Paper, Plastic, Metal, E-Waste",
+    "operatingHours": "8:30 AM - 5:30 PM",
+    "services": {
+      "paper": true,
+      "plastic": true,
+      "glass": true,
+      "metal": true,
+      "ewaste": true
+    }
+  },
+  {
+    "name": "Volt Recycle E-Waste Centre",
+    "address": "Kuala Lumpur & Selangor (collection service)",
+    "latitude": 3.1390,
+    "longitude": 101.6869,
+    "supportedServices": "E-Waste (Computers, Phones, Appliances)",
+    "operatingHours": "By appointment / collection service",
+    "services": {
+      "ewaste": true
+    }
+  }
+]
