@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1020170943416",
+    "firebase_url": "https://recyclego-22487-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "recyclego-22487",
+    "storage_bucket": "recyclego-22487.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020170943416:android:ad630ee3d94cfd353dad4d",
+        "android_client_info": {
+          "package_name": "my.edu.utar.RecycleGO"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxVkSAge9MBTRjRpnQLeWqbI8MTalXidA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
