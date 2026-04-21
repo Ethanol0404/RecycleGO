@@ -5,7 +5,23 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
 
+    <!-- Blue Background Circle -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M12,12c2.7,0 5,-2.3 5,-5s-2.3,-5 -5,-5 -5,2.3 -5,5 2.3,5 5,5zM12,14c-3.3,0 -10,1.7 -10,5v3h20v-3c0,-3.3 -6.7,-5 -10,-5z"/>
+        android:fillColor="#80D8FF"
+        android:pathData="M12,12m-10,0a10,10 0,1 1,20,0a10,10 0,1 1,-20,0" />
+
+    <!-- Red Hoodie / Body -->
+    <path
+        android:fillColor="#FF5252"
+        android:pathData="M12,14c-3.3,0 -6,2.7 -6,6v1h12v-1C18,16.7 15.3,14 12,14z" />
+
+    <!-- Face / Skin Tone -->
+    <path
+        android:fillColor="#FFD180"
+        android:pathData="M12,13c2.2,0 4,-1.8 4,-4s-1.8,-4 -4,-4s-4,1.8 -4,4S9.8,13 12,13z" />
+
+    <!-- Hair -->
+    <path
+        android:fillColor="#795548"
+        android:pathData="M12,5c-2.2,0 -4,1.8 -4,4c0,0.5 0.1,1 0.3,1.4C8.1,9.6 8,8.8 8,8c0-2.2 1.8-4 4-4s4,1.8 4,4c0,0.8-0.1,1.6-0.3,2.4c0.2-0.4 0.3-0.9 0.3-1.4C16,6.8 14.2,5 12,5z" />
 </vector>
