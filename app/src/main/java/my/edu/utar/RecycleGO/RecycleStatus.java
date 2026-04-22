@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import my.edu.utar.RecycleGO.database.DeviceUserIDManager;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.RecycleRequest;
 
@@ -50,7 +49,9 @@ public class RecycleStatus extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         firestoreManager = new FirestoreManager();
-        userId = DeviceUserIDManager.getUserId(requireContext());
+        
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
+        userId = prefs.getString("loggedInUid", "");
     }
 
     @Override

@@ -2,7 +2,6 @@ package my.edu.utar.RecycleGO;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -49,7 +48,7 @@ public class FrameActivity extends AppCompatActivity {
         ImageButton btnGroup = findViewById(R.id.btn_group);
 
         profileImage.setOnClickListener(v -> {
-            Intent intent = new Intent(FrameActivity.this, ProfileActivity.class);
+            Intent intent = new Intent(FrameActivity.this, UserProfileActivity.class);
             startActivity(intent);
         });
         // Click listeners
@@ -68,7 +67,7 @@ public class FrameActivity extends AppCompatActivity {
         });
 
         btnGroup.setOnClickListener(v -> {
-            // replaceFragment(new GroupFragment());
+            replaceFragment(new Community());
         });
     }
 
@@ -85,4 +84,5 @@ public class FrameActivity extends AppCompatActivity {
             header.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
     }
+
 }
