@@ -120,11 +120,9 @@ public class SignUpActivity extends AppCompatActivity {
                             String uid = UUID.randomUUID().toString();
                             UserRecord newUser = new UserRecord(uid, username, email, password, role);
                             
-                            // If admin, set the center; if user, FirestoreManager will set it to null
+                            // If admin, set the center; if user, it's already null by constructor
                             if (role.equals("Admin")) {
                                 newUser.setRecycleCenter(recycleCenter);
-                            } else {
-                                newUser.setRecycleCenter(null);
                             }
 
                             firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
