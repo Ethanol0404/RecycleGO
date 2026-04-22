@@ -18,7 +18,6 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import android.widget.Toast;
 import androidx.annotation.Nullable;
-import my.edu.utar.RecycleGO.database.DeviceUserIDManager;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.RecycleRequest;
 
@@ -178,8 +177,11 @@ public class PickUpActivity extends Fragment {
                 return;
             }
 
+            android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
+            String currentUid = prefs.getString("loggedInUid", "");
+
             RecycleRequest request = new RecycleRequest(
-                    DeviceUserIDManager.getUserId(requireContext()),
+                    currentUid,
                     category, date, contact, remarks
             );
 

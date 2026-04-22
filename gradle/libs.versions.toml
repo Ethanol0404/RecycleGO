@@ -11,6 +11,8 @@ osmdroid = "6.1.20"
 osmbonuspack = "6.9.0"
 room = "2.6.1"
 playServicesLocation = "21.3.0"
+glide = "4.16.0"
+circleimageview = "3.1.0"
 
 
 [libraries]
@@ -26,6 +28,8 @@ osmbonuspack = { group = "com.github.MKergall", name = "osmbonuspack", version.r
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
+circleimageview = { group = "de.hdodenhof", name = "circleimageview", version.ref = "circleimageview" }
 
 
 [plugins]

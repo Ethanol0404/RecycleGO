@@ -1,8 +1,10 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import androidx.activity.EdgeToEdge;
@@ -21,7 +23,7 @@ public class FrameActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.fragment_frame);
-        
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -36,6 +38,8 @@ public class FrameActivity extends AppCompatActivity {
             replaceFragment(new Main());
         }
 
+        ImageView profileImage = findViewById(R.id.profileImage);
+
         // Initialize buttons
         ImageButton btnHome = findViewById(R.id.home);
         ImageButton btnCalendar = findViewById(R.id.btn_calendar);
@@ -43,9 +47,13 @@ public class FrameActivity extends AppCompatActivity {
         ImageButton btnLocation = findViewById(R.id.btn_location);
         ImageButton btnGroup = findViewById(R.id.btn_group);
 
+        profileImage.setOnClickListener(v -> {
+            Intent intent = new Intent(FrameActivity.this, UserProfileActivity.class);
+            startActivity(intent);
+        });
         // Click listeners
         btnHome.setOnClickListener(v -> replaceFragment(new Main()));
-        
+
         btnCalendar.setOnClickListener(v -> {
             // replaceFragment(new CalendarFragment());
         });
@@ -55,11 +63,11 @@ public class FrameActivity extends AppCompatActivity {
         });
 
         btnLocation.setOnClickListener(v -> {
-              replaceFragment(new Map());
+            replaceFragment(new Map());
         });
 
         btnGroup.setOnClickListener(v -> {
-            // replaceFragment(new GroupFragment());
+            replaceFragment(new Community());
         });
     }
 
@@ -76,4 +84,5 @@ public class FrameActivity extends AppCompatActivity {
             header.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
     }
+
 }
