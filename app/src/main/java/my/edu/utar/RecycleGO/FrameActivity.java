@@ -51,10 +51,10 @@ public class FrameActivity extends AppCompatActivity {
             replaceFragment(new UserProfileActivity());
         });
         // Click listeners
-        btnHome.setOnClickListener(v -> replaceFragment(new Main()));
+        btnHome.setOnClickListener(v -> replaceFragment(new HomeFragment()));
 
         btnCalendar.setOnClickListener(v -> {
-            // replaceFragment(new CalendarFragment());
+            replaceFragment(new ActivityFragment());
         });
 
         btnRecycle.setOnClickListener(v -> {
