@@ -53,9 +53,9 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
 
-    // Remove Room Database as we are migrating to Firestore
-    // implementation(libs.room.runtime)
-    // annotationProcessor(libs.room.compiler)
+    // Image loading
+    implementation(libs.glide)
+    implementation(libs.circleimageview)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

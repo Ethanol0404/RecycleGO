@@ -48,8 +48,7 @@ public class FrameActivity extends AppCompatActivity {
         ImageButton btnGroup = findViewById(R.id.btn_group);
 
         profileImage.setOnClickListener(v -> {
-            Intent intent = new Intent(FrameActivity.this, UserProfileActivity.class);
-            startActivity(intent);
+            replaceFragment(new UserProfileActivity());
         });
         // Click listeners
         btnHome.setOnClickListener(v -> replaceFragment(new Main()));

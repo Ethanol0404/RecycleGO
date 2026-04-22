@@ -1,23 +1,27 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserProfileActivity extends AppCompatActivity {
+public class UserProfileActivity extends Fragment {
 
     EditText etUsername, etEmail, etPhone;
     ImageButton btnClose;
@@ -25,35 +29,51 @@ public class UserProfileActivity extends AppCompatActivity {
     FirestoreManager firestoreManager;
     String userEmail;
 
+    public UserProfileActivity() {
+        // Required empty public constructor
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_profile);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.activity_profile, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Hide header when in profile fragment
+        if (getActivity() instanceof FrameActivity) {
+            ((FrameActivity) getActivity()).setHeaderVisible(false);
+        }
 
         firestoreManager = new FirestoreManager();
 
-        etUsername = findViewById(R.id.etProfileUsername);
-        etEmail = findViewById(R.id.etProfileEmail);
-        etPhone = findViewById(R.id.etProfilePhone);
-        btnUpdate = findViewById(R.id.btnUpdateProfile);
-        btnLogout = findViewById(R.id.btnLogout);
-        btnClose = findViewById(R.id.btnClose2);
+        etUsername = view.findViewById(R.id.etProfileUsername);
+        etEmail = view.findViewById(R.id.etProfileEmail);
+        etPhone = view.findViewById(R.id.etProfilePhone);
+        btnUpdate = view.findViewById(R.id.btnUpdateProfile);
+        btnLogout = view.findViewById(R.id.btnLogout);
+        btnClose = view.findViewById(R.id.btnClose2);
 
         btnClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(UserProfileActivity.this, Main.class); // Or whatever the back activity is
-                startActivity(intent);
-                finish();
+                Fragment nextFragment = new my.edu.utar.RecycleGO.Main();
+                getParentFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, nextFragment)
+                        .addToBackStack(null)
+                        .commit();
             }
         });
-
 
         // Make Email read-only as it's the unique identifier
         etEmail.setEnabled(false);
 
-        // Retrieve logged in user's email from SharedPreferences
-        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        // Retrieve logged in user's info from SharedPreferences
+        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         userEmail = sharedPreferences.getString("loggedInEmail", "");
 
         if (!userEmail.isEmpty()) {
@@ -67,7 +87,7 @@ public class UserProfileActivity extends AppCompatActivity {
                 String phone = etPhone.getText().toString();
 
                 if (username.isEmpty()) {
-                    Toast.makeText(UserProfileActivity.this, "Username cannot be empty", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Username cannot be empty", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -75,23 +95,21 @@ public class UserProfileActivity extends AppCompatActivity {
                 updates.put("username", username);
                 updates.put("phone", phone);
 
-                // Need a UID for update, or update by email? 
-                // Currently FirestoreManager uses UID. Let's get UID from SharedPreferences
                 String uid = sharedPreferences.getString("loggedInUid", "");
                 if (uid.isEmpty()) {
-                    Toast.makeText(UserProfileActivity.this, "Error: User ID not found", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Error: User ID not found", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
                 firestoreManager.updateUser(uid, updates, new FirestoreManager.OnTaskCompleteListener() {
                     @Override
                     public void onSuccess() {
-                        Toast.makeText(UserProfileActivity.this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onFailure(String error) {
-                        Toast.makeText(UserProfileActivity.this, "Update Failed: " + error, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Update Failed: " + error, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -105,10 +123,10 @@ public class UserProfileActivity extends AppCompatActivity {
                 editor.clear();
                 editor.apply();
 
-                Intent intent = new Intent(UserProfileActivity.this, LoginActivity.class);
+                Intent intent = new Intent(getActivity(), LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
-                finish();
+                getActivity().finish();
             }
         });
     }
@@ -117,7 +135,7 @@ public class UserProfileActivity extends AppCompatActivity {
         firestoreManager.getUserByEmail(userEmail, new FirestoreManager.OnUserFetchListener() {
             @Override
             public void onUserFetched(UserRecord user) {
-                if (user != null) {
+                if (user != null && isAdded()) {
                     etUsername.setText(user.getUsername());
                     etEmail.setText(user.getEmail());
                     etPhone.setText(user.getPhone());
@@ -126,8 +144,19 @@ public class UserProfileActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(String error) {
-                Toast.makeText(UserProfileActivity.this, "Error loading data: " + error, Toast.LENGTH_SHORT).show();
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Error loading data: " + error, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
-}
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Ensure header is restored when leaving this fragment
+        if (getActivity() instanceof FrameActivity) {
+            ((FrameActivity) getActivity()).setHeaderVisible(true);
+        }
+    }
+}
