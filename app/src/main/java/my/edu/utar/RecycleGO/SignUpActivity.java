@@ -16,7 +16,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import my.edu.utar.RecycleGO.database.DatabaseHelper;
+import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
+import java.util.UUID;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -24,7 +26,7 @@ public class SignUpActivity extends AppCompatActivity {
     Spinner spinnerSignUpRole;
     Button btnSignUp;
     TextView tvSignIn;
-    DatabaseHelper db;
+    FirestoreManager firestoreManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +39,7 @@ public class SignUpActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = new DatabaseHelper(this);
+        firestoreManager = new FirestoreManager();
 
         // Initialize views
         etUsername = findViewById(R.id.etUsername);
@@ -84,18 +86,36 @@ public class SignUpActivity extends AppCompatActivity {
                 }
 
                 // Check if user already exists
-                if (db.getUserByEmail(email).getCount() > 0) {
-                    Toast.makeText(SignUpActivity.this, "User with this email already exists", Toast.LENGTH_SHORT).show();
-                } else {
-                    // Register user with the selected role
-                    boolean isInserted = db.addUser(username, email, password, role);
-                    if (isInserted) {
-                        Toast.makeText(SignUpActivity.this, "Registration Successful as " + role, Toast.LENGTH_SHORT).show();
-                        finish(); // Go back to Login
-                    } else {
-                        Toast.makeText(SignUpActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
+                firestoreManager.getUserByEmail(email, new FirestoreManager.OnUserFetchListener() {
+                    @Override
+                    public void onUserFetched(UserRecord existingUser) {
+                        if (existingUser != null) {
+                            Toast.makeText(SignUpActivity.this, "User with this email already exists", Toast.LENGTH_SHORT).show();
+                        } else {
+                            // Register user
+                            String uid = UUID.randomUUID().toString();
+                            UserRecord newUser = new UserRecord(uid, username, email, password, role);
+
+                            firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
+                                @Override
+                                public void onSuccess() {
+                                    Toast.makeText(SignUpActivity.this, "Registration Successful as " + role, Toast.LENGTH_SHORT).show();
+                                    finish(); // Go back to Login
+                                }
+
+                                @Override
+                                public void onFailure(String error) {
+                                    Toast.makeText(SignUpActivity.this, "Registration Failed: " + error, Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                     }
-                }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(SignUpActivity.this, "Error checking user: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 

@@ -16,7 +16,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import my.edu.utar.RecycleGO.database.DatabaseHelper;
+import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -24,7 +25,7 @@ public class LoginActivity extends AppCompatActivity {
     EditText etLoginEmail;
     EditText etLoginPassword;
     Spinner spinnerRole;
-    DatabaseHelper db;
+    FirestoreManager firestoreManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +38,7 @@ public class LoginActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = new DatabaseHelper(this);
+        firestoreManager = new FirestoreManager();
 
         // Initialize views
         btnLogin = findViewById(R.id.btnLogin);
@@ -65,24 +66,33 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
 
-                boolean isValid = db.checkUser(email, password, role);
+                firestoreManager.signIn(email, password, role, new FirestoreManager.OnUserFetchListener() {
+                    @Override
+                    public void onUserFetched(UserRecord user) {
+                        if (user != null) {
+                            // Save user info to SharedPreferences
+                            SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.putString("loggedInEmail", email);
+                            editor.putString("loggedInUid", user.getUid()); // CRITICAL for social features
+                            editor.putString("loggedInUsername", user.getUsername());
+                            editor.apply();
 
-                if (isValid) {
-                    // Save email to SharedPreferences for later retrieval in Profile
-                    SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("loggedInEmail", email);
-                    editor.apply();
+                            Toast.makeText(LoginActivity.this, "Login Successful as " + role, Toast.LENGTH_SHORT).show();
 
-                    Toast.makeText(LoginActivity.this, "Login Successful as " + role, Toast.LENGTH_SHORT).show();
-                    
-                    // FIXED: Start FrameActivity instead of Main (Fragment)
-                    Intent intent = new Intent(LoginActivity.this, FrameActivity.class);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    Toast.makeText(LoginActivity.this, "Invalid credentials or role", Toast.LENGTH_SHORT).show();
-                }
+                            Intent intent = new Intent(LoginActivity.this, FrameActivity.class);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            Toast.makeText(LoginActivity.this, "Invalid credentials or role", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(LoginActivity.this, "Login Error: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 

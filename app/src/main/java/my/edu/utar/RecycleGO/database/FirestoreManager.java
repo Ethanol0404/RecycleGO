@@ -4,10 +4,16 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.CollectionReference;
 
+import java.util.List;
+
 public class FirestoreManager {
     private final FirebaseFirestore db;
     private static final String COLLECTION_CENTERS = "centers";
     private static final String COLLECTION_REQUESTS = "recycle_requests";
+    private static final String COLLECTION_USERS = "users";
+    private static final String COLLECTION_COMMUNITIES = "communities";
+    private static final String COLLECTION_POSTS = "posts";
+    private static final String COLLECTION_COMMENTS = "comments";
 
     public FirestoreManager() {
         this.db = FirebaseFirestore.getInstance();
@@ -25,15 +31,15 @@ public class FirestoreManager {
 
     public void submitRequest(RecycleRequest request, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_REQUESTS).add(request)
-            .addOnSuccessListener(documentReference -> listener.onSuccess())
-            .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+                .addOnSuccessListener(documentReference -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
     public void updateRequestStatus(String requestId, String newStatus, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_REQUESTS).document(requestId)
-            .update("status", newStatus)
-            .addOnSuccessListener(aVoid -> listener.onSuccess())
-            .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+                .update("status", newStatus)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
     public Query getRequestsByUser(String userId) {
@@ -45,5 +51,151 @@ public class FirestoreManager {
     public interface OnTaskCompleteListener {
         void onSuccess();
         void onFailure(String error);
+    }
+
+    public interface OnUserFetchListener {
+        void onUserFetched(UserRecord user);
+        void onFailure(String error);
+    }
+
+    public interface OnListFetchListener<T> {
+        void onListFetched(java.util.List<T> list);
+        void onFailure(String error);
+    }
+
+    // --- Social / Community Methods ---
+
+    // Users
+    public void getUser(String uid, OnUserFetchListener listener) {
+        db.collection(COLLECTION_USERS).document(uid).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        listener.onUserFetched(documentSnapshot.toObject(UserRecord.class));
+                    } else {
+                        listener.onUserFetched(null);
+                    }
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void getUserByEmail(String email, OnUserFetchListener listener) {
+        db.collection(COLLECTION_USERS)
+                .whereEqualTo("email", email)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        listener.onUserFetched(queryDocumentSnapshots.getDocuments().get(0).toObject(UserRecord.class));
+                    } else {
+                        listener.onUserFetched(null);
+                    }
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void signIn(String email, String password, String role, OnUserFetchListener listener) {
+        db.collection(COLLECTION_USERS)
+                .whereEqualTo("email", email)
+                .whereEqualTo("password", password)
+                .whereEqualTo("role", role)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        listener.onUserFetched(queryDocumentSnapshots.getDocuments().get(0).toObject(UserRecord.class));
+                    } else {
+                        listener.onUserFetched(null);
+                    }
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void saveUser(UserRecord user, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_USERS).document(user.getUid()).set(user)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void updateUser(String uid, java.util.Map<String, Object> updates, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_USERS).document(uid).update(updates)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    // Communities
+    public void getAllCommunities(OnListFetchListener<CommunityModel> listener) {
+        db.collection(COLLECTION_COMMUNITIES).get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    listener.onListFetched(queryDocumentSnapshots.toObjects(CommunityModel.class));
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void subscribeToCommunity(String uid, String communityID, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_USERS).document(uid)
+                .update("subscribedCommunities", com.google.firebase.firestore.FieldValue.arrayUnion(communityID))
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    // Posts
+    public void createPost(CommunityPost post, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_POSTS).document(post.getPostID()).set(post)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void getFeedPosts(List<String> communityIDs, OnListFetchListener<CommunityPost> listener) {
+        if (communityIDs == null || communityIDs.isEmpty()) {
+            listener.onListFetched(new java.util.ArrayList<>());
+            return;
+        }
+        db.collection(COLLECTION_POSTS)
+                .whereIn("communityID", communityIDs)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    listener.onListFetched(queryDocumentSnapshots.toObjects(CommunityPost.class));
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void getUserPosts(String uid, OnListFetchListener<CommunityPost> listener) {
+        db.collection(COLLECTION_POSTS)
+                .whereEqualTo("authorUID", uid)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    listener.onListFetched(queryDocumentSnapshots.toObjects(CommunityPost.class));
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void toggleLike(String postID, boolean isLiked, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_POSTS).document(postID)
+                .update("likes", com.google.firebase.firestore.FieldValue.increment(isLiked ? 1 : -1))
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    // Comments
+    public void addComment(CommunityComment comment, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_COMMENTS).add(comment)
+                .addOnSuccessListener(documentReference -> {
+                    // Increment comment count on post
+                    db.collection(COLLECTION_POSTS).document(comment.getPostID())
+                            .update("commentsCount", com.google.firebase.firestore.FieldValue.increment(1));
+                    listener.onSuccess();
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void getComments(String postID, OnListFetchListener<CommunityComment> listener) {
+        db.collection(COLLECTION_COMMENTS)
+                .whereEqualTo("postID", postID)
+                .orderBy("timestamp", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    listener.onListFetched(queryDocumentSnapshots.toObjects(CommunityComment.class));
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 }
