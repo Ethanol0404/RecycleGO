@@ -12,6 +12,7 @@ public class UserRecord {
     private String role;
     private String profilePicUrl;
     private List<String> subscribedCommunities;
+    private String recycleCenter; // New attribute for Admin role
 
     public UserRecord() {
         this.subscribedCommunities = new ArrayList<>();
@@ -25,6 +26,7 @@ public class UserRecord {
         this.role = role;
         this.phone = "";
         this.profilePicUrl = "";
+        this.recycleCenter = "";
         this.subscribedCommunities = new ArrayList<>();
     }
 
@@ -52,4 +54,7 @@ public class UserRecord {
 
     public List<String> getSubscribedCommunities() { return subscribedCommunities; }
     public void setSubscribedCommunities(List<String> subscribedCommunities) { this.subscribedCommunities = subscribedCommunities; }
+
+    public String getRecycleCenter() { return recycleCenter; }
+    public void setRecycleCenter(String recycleCenter) { this.recycleCenter = recycleCenter; }
 }

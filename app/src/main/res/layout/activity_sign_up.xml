@@ -111,6 +111,21 @@
                     android:layout_height="match_parent" />
             </LinearLayout>
 
+            <!-- Recycle Center Field - Only for Admin -->
+            <EditText
+                android:id="@+id/etRecycleCenter"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/edit_text_background"
+                android:drawableStart="@drawable/ic_location"
+                android:drawablePadding="12dp"
+                android:hint="Recycle Center Name"
+                android:inputType="text"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone" />
+
             <EditText
                 android:id="@+id/etEmail"
                 android:layout_width="match_parent"

@@ -93,6 +93,7 @@ public class FirestoreManager {
     }
 
     public void signIn(String email, String password, String role, OnUserFetchListener listener) {
+        // Search for the user in the single 'users' collection with matching email, password, AND role
         db.collection(COLLECTION_USERS)
                 .whereEqualTo("email", email)
                 .whereEqualTo("password", password)
@@ -109,6 +110,11 @@ public class FirestoreManager {
     }
 
     public void saveUser(UserRecord user, OnTaskCompleteListener listener) {
+        // Automatically set recycleCenter to null if the user is not an Admin
+        if (!"Admin".equals(user.getRole())) {
+            user.setRecycleCenter(null);
+        }
+
         db.collection(COLLECTION_USERS).document(user.getUid()).set(user)
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
