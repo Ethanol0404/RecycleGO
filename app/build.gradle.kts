@@ -1,9 +1,6 @@
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
-
 }
 
 android {
@@ -40,27 +37,24 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
-    
+
     // Map & Location
     implementation(libs.osmdroid)
     implementation(libs.osmbonuspack)
     implementation(libs.play.services.location)
 
-    //firebase
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    // Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
 
-    implementation("com.google.firebase:firebase-analytics")
+    // Add the dependencies for Auth and Firestore
+    implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-analytics")
 
-    // Remove Room Database as we are migrating to Firestore
-    // implementation(libs.room.runtime)
-    // annotationProcessor(libs.room.compiler)
-    
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-    //asset
+    // Gson
     implementation("com.google.code.gson:gson:2.10.1")
 }
