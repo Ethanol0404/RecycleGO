@@ -111,7 +111,7 @@
                     android:layout_height="match_parent" />
             </LinearLayout>
 
-            <!-- Recycle Center Field - Only for Admin -->
+            <!-- Recycle Center Name - Only visible for Admin -->
             <EditText
                 android:id="@+id/etRecycleCenter"
                 android:layout_width="match_parent"

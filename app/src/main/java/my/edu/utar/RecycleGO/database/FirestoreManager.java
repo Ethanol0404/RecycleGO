@@ -1,5 +1,6 @@
 package my.edu.utar.RecycleGO.database;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.CollectionReference;
@@ -14,9 +15,28 @@ public class FirestoreManager {
     private static final String COLLECTION_COMMUNITIES = "communities";
     private static final String COLLECTION_POSTS = "posts";
     private static final String COLLECTION_COMMENTS = "comments";
+    private static final String COLLECTION_CAMPAIGNS = "campaigns";
 
     public FirestoreManager() {
         this.db = FirebaseFirestore.getInstance();
+    }
+
+    // Campaigns
+    public void getUpcomingCampaigns(OnListFetchListener<CampaignRecord> listener) {
+        db.collection(COLLECTION_CAMPAIGNS)
+                .orderBy("date", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<CampaignRecord> list = queryDocumentSnapshots.toObjects(CampaignRecord.class);
+                    listener.onListFetched(list);
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void createCampaign(CampaignRecord campaign, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_CAMPAIGNS).document(campaign.getId()).set(campaign)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
     // Centers
@@ -109,6 +129,11 @@ public class FirestoreManager {
     }
 
     public void saveUser(UserRecord user, OnTaskCompleteListener listener) {
+        // Automatically set recycleCenter to null if the user is not an Admin
+        if (!"Admin".equals(user.getRole())) {
+            user.setRecycleCenter(null);
+        }
+
         db.collection(COLLECTION_USERS).document(user.getUid()).set(user)
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));

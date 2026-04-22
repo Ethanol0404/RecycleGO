@@ -58,7 +58,7 @@ public class SignUpActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerSignUpRole.setAdapter(adapter);
 
-        // Role listener to show/hide Recycle Center field
+        // Show/Hide Recycle Center field based on role
         spinnerSignUpRole.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -100,7 +100,7 @@ public class SignUpActivity extends AppCompatActivity {
                 }
 
                 if (role.equals("Admin") && recycleCenter.isEmpty()) {
-                    Toast.makeText(SignUpActivity.this, "Please provide the Recycle Center name", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(SignUpActivity.this, "Please enter your Recycle Center Name", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -119,8 +119,6 @@ public class SignUpActivity extends AppCompatActivity {
                             // Register user
                             String uid = UUID.randomUUID().toString();
                             UserRecord newUser = new UserRecord(uid, username, email, password, role);
-                            
-                            // If admin, set the center; if user, it's already null by constructor
                             if (role.equals("Admin")) {
                                 newUser.setRecycleCenter(recycleCenter);
                             }
