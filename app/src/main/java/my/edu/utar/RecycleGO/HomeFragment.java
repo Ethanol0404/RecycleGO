@@ -23,7 +23,7 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
+        View view = inflater.inflate(R.layout.activity_main, container, false);
 
         txtPoints = view.findViewById(R.id.txt_points);
         cardNews = view.findViewById(R.id.card_news);
@@ -106,8 +106,14 @@ public class HomeFragment extends Fragment {
         // AI Assistant
         if (fabAiAssistant != null) {
             fabAiAssistant.setOnClickListener(v -> {
+                // Change AIAssistant to extend Fragment (not DialogFragment)
                 AIAssistant assistant = new AIAssistant();
-                assistant.show(getParentFragmentManager(), assistant.getTag());
+
+                getParentFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, assistant)
+                        .addToBackStack(null)
+                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                        .commit();
             });
         }
 

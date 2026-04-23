@@ -21,7 +21,7 @@
                 android:id="@+id/post_avatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@drawable/outline_account_circle_24"/>
+                android:src="@drawable/useravatar2"/>
             <LinearLayout
                 android:layout_toEndOf="@id/post_avatar"
                 android:layout_width="wrap_content"

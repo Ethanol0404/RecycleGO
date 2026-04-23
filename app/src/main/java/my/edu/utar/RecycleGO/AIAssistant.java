@@ -67,7 +67,7 @@ public class AIAssistant extends BottomSheetDialogFragment {
 
     // Gemini AI Setup
     private GenerativeModelFutures model;
-    private final String API_KEY = "AIzaSyBiBmmu_dGnT6v9cc9QGLxpwDnyKxw1gDA";
+    private final String API_KEY = BuildConfig.GEMINI_API_KEY;
 
     // Camera Launcher
     private final ActivityResultLauncher<Intent> takePictureLauncher = registerForActivityResult(
@@ -287,7 +287,11 @@ public class AIAssistant extends BottomSheetDialogFragment {
                     else if (msg.toLowerCase().contains("unable to resolve host") ||
                             msg.toLowerCase().contains("no address associated")) {
                         addMessage("📡 No internet connection. Please check your network.", false);
-                    }
+                    } else if (msg.contains("429") || msg.contains("quota")) {
+                            // Show a "User-Friendly" Toast message
+                            addMessage ("⏳ AI is taking a quick breath. Please try again in a few seconds!", false);
+                        }
+
 
                     else {
                         addMessage("❌ Unexpected error: Please try later.", false);
@@ -326,8 +330,49 @@ public class AIAssistant extends BottomSheetDialogFragment {
             public void onFailure(Throwable t) {
                 Log.e(TAG, "Image analysis failed", t);
                 if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> addMessage("Analysis failed: " + t.getMessage(), false));
+                    getActivity().runOnUiThread(() -> {
+
+                        String msg = (t.getMessage() != null) ? t.getMessage() : "";
+
+                        if (msg.contains("503") ||
+                                msg.contains("UNAVAILABLE") ||
+                                msg.contains("Service Unavailable")) {
+                            addMessage("⚠️ AI is busy right now. Please try again in a few seconds.", false);
+                        }
+
+                        else if (msg.contains("400") || msg.contains("INVALID_ARGUMENT")) {
+                            addMessage("❌ Invalid request. Please try rephrasing your input.", false);
+                        }
+
+                        else if (msg.contains("401") || msg.contains("403") || msg.contains("PERMISSION_DENIED")) {
+                            addMessage("🚫 API key not allowed or invalid. Check your setup.", false);
+                        }
+
+                        else if (msg.contains("404") || msg.contains("NOT_FOUND")) {
+                            addMessage("❌ Model not found. Check model name.", false);
+                        }
+
+                        else if (msg.toLowerCase().contains("timeout") || msg.contains("SocketTimeoutException")) {
+                            addMessage("⏳ Request timed out. Please check your internet and try again.", false);
+                        }
+
+                        else if (msg.toLowerCase().contains("unable to resolve host") ||
+                                msg.toLowerCase().contains("no address associated")) {
+                            addMessage("📡 No internet connection. Please check your network.", false);
+                        } else if (msg.contains("429") || msg.contains("quota")) {
+                            // Show a "User-Friendly" Toast message
+                            addMessage ("⏳ AI is taking a quick breath. Please try again in a few seconds!", false);
+                        }
+
+
+                        else {
+                            addMessage("❌ Unexpected error: Please try later.", false);
+                        }
+
+                    });
                 }
+
+
             }
         }, executor);
     }

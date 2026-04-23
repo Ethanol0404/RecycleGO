@@ -132,7 +132,7 @@
 
         <!-- Spacer for Home Button -->
         <View
-            android:layout_width="48dp"
+            android:layout_width="72dp"
             android:layout_height="1dp" />
 
         <ImageButton
@@ -169,10 +169,10 @@
         android:padding="22dp"
         android:scaleType="centerInside"
         android:src="@drawable/homeic"
-        app:tint="@null"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="12dp"
+        app:tint="@null" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

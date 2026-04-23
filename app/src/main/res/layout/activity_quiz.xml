@@ -20,9 +20,9 @@
             android:id="@+id/btn_back"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:src="@drawable/outline_arrow_drop_down_24"
-            android:rotation="90"
-            app:tint="@color/black"
+            android:src="@drawable/arrow"
+            android:rotation="180"
+            app:tint="@null"
             android:contentDescription="Back" />
 
         <TextView
