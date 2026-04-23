@@ -1,11 +1,15 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,8 +20,14 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
+
 public class FrameActivity extends AppCompatActivity {
     private RelativeLayout header;
+    private TextView tvUsername, tvRole;
+    private FirestoreManager firestoreManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,8 +40,15 @@ public class FrameActivity extends AppCompatActivity {
             return insets;
         });
 
-        //header view
+        firestoreManager = new FirestoreManager();
+
+        // header view
         header = findViewById(R.id.header);
+        tvUsername = findViewById(R.id.username);
+        tvRole = findViewById(R.id.role);
+
+        // Fetch user data
+        loadUserData();
 
         // Set default fragment
         if (savedInstanceState == null) {
@@ -50,11 +67,12 @@ public class FrameActivity extends AppCompatActivity {
         profileImage.setOnClickListener(v -> {
             replaceFragment(new UserProfileActivity());
         });
+
         // Click listeners
-        btnHome.setOnClickListener(v -> replaceFragment(new HomeFragment()));
+        btnHome.setOnClickListener(v -> replaceFragment(new Main()));
 
         btnCalendar.setOnClickListener(v -> {
-            replaceFragment(new ActivityFragment());
+            replaceFragment(new CampaignsActivity());
         });
 
         btnRecycle.setOnClickListener(v -> {
@@ -62,12 +80,34 @@ public class FrameActivity extends AppCompatActivity {
         });
 
         btnLocation.setOnClickListener(v -> {
-            replaceFragment(new Map());
+              replaceFragment(new Map());
         });
 
         btnGroup.setOnClickListener(v -> {
             replaceFragment(new Community());
         });
+    }
+
+    private void loadUserData() {
+        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String email = sharedPreferences.getString("loggedInEmail", "");
+
+        if (!email.isEmpty()) {
+            firestoreManager.getUserByEmail(email, new FirestoreManager.OnUserFetchListener() {
+                @Override
+                public void onUserFetched(UserRecord user) {
+                    if (user != null) {
+                        tvUsername.setText(user.getUsername());
+                        tvRole.setText(user.getRole().toUpperCase());
+                    }
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    Toast.makeText(FrameActivity.this, "Error loading header data", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private void replaceFragment(Fragment fragment) {
@@ -83,5 +123,4 @@ public class FrameActivity extends AppCompatActivity {
             header.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
     }
-
 }

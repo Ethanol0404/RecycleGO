@@ -25,12 +25,12 @@
             android:layout_height="40dp"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:background="@drawable/profile_circle"
             android:clipToOutline="true"
-            android:padding="2dp"
-            android:scaleType="centerCrop"
+            android:scaleType="centerInside"
             android:src="@drawable/profile_pic"
-            tools:srcCompat="@tools:sample/avatars" />
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless" />
 
         <!-- Username -->
         <TextView
