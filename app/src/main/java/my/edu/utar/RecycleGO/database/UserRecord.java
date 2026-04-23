@@ -13,9 +13,13 @@ public class UserRecord {
     private String profilePicUrl;
     private List<String> subscribedCommunities;
     private String recycleCenter;
+    private int points;
+    private int totalRecycled;
 
     public UserRecord() {
         this.subscribedCommunities = new ArrayList<>();
+        this.points = 0;
+        this.totalRecycled = 0;
     }
 
     public UserRecord(String uid, String username, String email, String password, String role) {
@@ -28,6 +32,8 @@ public class UserRecord {
         this.profilePicUrl = "";
         this.subscribedCommunities = new ArrayList<>();
         this.recycleCenter = "";
+        this.points = 0;
+        this.totalRecycled = 0;
     }
 
     // Getters and Setters
@@ -57,4 +63,10 @@ public class UserRecord {
 
     public String getRecycleCenter() { return recycleCenter; }
     public void setRecycleCenter(String recycleCenter) { this.recycleCenter = recycleCenter; }
+
+    public int getPoints() { return points; }
+    public void setPoints(int points) { this.points = points; }
+
+    public int getTotalRecycled() { return totalRecycled; }
+    public void setTotalRecycled(int totalRecycled) { this.totalRecycled = totalRecycled; }
 }

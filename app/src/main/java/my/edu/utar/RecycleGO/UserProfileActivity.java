@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class UserProfileActivity extends Fragment {
 
     EditText etUsername, etEmail, etPhone, etRecycleCenter;
+    TextView txtPoints, txtTotalRecycled;  // 新增：显示积分和回收次数
     ImageButton btnClose;
     Button btnUpdate, btnLogout;
     FirestoreManager firestoreManager;
@@ -37,7 +39,6 @@ public class UserProfileActivity extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.activity_profile, container, false);
     }
 
@@ -45,7 +46,6 @@ public class UserProfileActivity extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Hide header when in profile fragment
         if (getActivity() instanceof FrameActivity) {
             ((FrameActivity) getActivity()).setHeaderVisible(false);
         }
@@ -60,19 +60,18 @@ public class UserProfileActivity extends Fragment {
         btnLogout = view.findViewById(R.id.btnLogout);
         btnClose = view.findViewById(R.id.btnClose2);
 
-        btnClose.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (getActivity() != null) {
-                    getActivity().getSupportFragmentManager().popBackStack();
-                }
+        // 新增：初始化积分显示
+        txtPoints = view.findViewById(R.id.txt_profile_points);
+        txtTotalRecycled = view.findViewById(R.id.txt_profile_total_recycled);
+
+        btnClose.setOnClickListener(v -> {
+            if (getActivity() != null) {
+                getActivity().getSupportFragmentManager().popBackStack();
             }
         });
 
-        // Make Email read-only as it's the unique identifier
         etEmail.setEnabled(false);
 
-        // Retrieve logged in user's info from SharedPreferences
         SharedPreferences sharedPreferences = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         userEmail = sharedPreferences.getString("loggedInEmail", "");
 
@@ -80,60 +79,52 @@ public class UserProfileActivity extends Fragment {
             loadUserData();
         }
 
-        btnUpdate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String username = etUsername.getText().toString().trim();
-                String phone = etPhone.getText().toString().trim();
-                String recycleCenter = etRecycleCenter.getText().toString().trim();
+        btnUpdate.setOnClickListener(v -> {
+            String username = etUsername.getText().toString().trim();
+            String phone = etPhone.getText().toString().trim();
+            String recycleCenter = etRecycleCenter.getText().toString().trim();
 
-                if (username.isEmpty()) {
-                    Toast.makeText(getContext(), "Username cannot be empty", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("username", username);
-                updates.put("phone", phone);
-                
-                // Only update recycleCenter if the user is an Admin
-                if ("Admin".equalsIgnoreCase(userRole)) {
-                    updates.put("recycleCenter", recycleCenter);
-                }
-
-                String uid = sharedPreferences.getString("loggedInUid", "");
-                if (uid.isEmpty()) {
-                    Toast.makeText(getContext(), "Error: User ID not found", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                firestoreManager.updateUser(uid, updates, new FirestoreManager.OnTaskCompleteListener() {
-                    @Override
-                    public void onSuccess() {
-                        Toast.makeText(getContext(), "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onFailure(String error) {
-                        Toast.makeText(getContext(), "Update Failed: " + error, Toast.LENGTH_SHORT).show();
-                    }
-                });
+            if (username.isEmpty()) {
+                Toast.makeText(getContext(), "Username cannot be empty", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("username", username);
+            updates.put("phone", phone);
+
+            if ("Admin".equalsIgnoreCase(userRole)) {
+                updates.put("recycleCenter", recycleCenter);
+            }
+
+            String uid = sharedPreferences.getString("loggedInUid", "");
+            if (uid.isEmpty()) {
+                Toast.makeText(getContext(), "Error: User ID not found", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            firestoreManager.updateUser(uid, updates, new FirestoreManager.OnTaskCompleteListener() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(getContext(), "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    Toast.makeText(getContext(), "Update Failed: " + error, Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
-        btnLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Clear SharedPreferences on logout
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.clear();
-                editor.apply();
+        btnLogout.setOnClickListener(v -> {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.clear();
+            editor.apply();
 
-                Intent intent = new Intent(getActivity(), LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                getActivity().finish();
-            }
+            Intent intent = new Intent(getActivity(), LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            getActivity().finish();
         });
     }
 
@@ -145,10 +136,13 @@ public class UserProfileActivity extends Fragment {
                     etUsername.setText(user.getUsername());
                     etEmail.setText(user.getEmail());
                     etPhone.setText(user.getPhone());
-                    
+
+                    // 新增：显示积分和回收次数
+                    txtPoints.setText(user.getPoints() + " pts");
+                    txtTotalRecycled.setText(user.getTotalRecycled() + " times");
+
                     userRole = user.getRole();
-                    
-                    // Role-based UI visibility
+
                     if ("Admin".equalsIgnoreCase(userRole)) {
                         etRecycleCenter.setVisibility(View.VISIBLE);
                         etRecycleCenter.setText(user.getRecycleCenter());
@@ -170,7 +164,6 @@ public class UserProfileActivity extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Ensure header is restored when leaving this fragment
         if (getActivity() instanceof FrameActivity) {
             ((FrameActivity) getActivity()).setHeaderVisible(true);
         }
