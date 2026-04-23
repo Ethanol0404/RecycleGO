@@ -17,7 +17,7 @@ import com.google.firebase.auth.FirebaseUser;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
-public class RewardsActivity extends Fragment {
+public class RewardActvity extends Fragment {
 
     private TextView txtPoints, txtUserName, txtEmail, txtTotalRecycled, txtTotalPoints;
     private FirestoreManager firestoreManager;

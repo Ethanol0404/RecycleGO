@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FieldValue;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class FirestoreManager {
         this.db = FirebaseFirestore.getInstance();
     }
 
-    // Campaigns
+    // ==================== Campaigns ====================
     public void getUpcomingCampaigns(OnListFetchListener<CampaignRecord> listener) {
         db.collection(COLLECTION_CAMPAIGNS)
                 .orderBy("date", Query.Direction.ASCENDING)
@@ -39,12 +40,12 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
-    // Centers
+    // ==================== Centers ====================
     public CollectionReference getCentersCollection() {
         return db.collection(COLLECTION_CENTERS);
     }
 
-    // Requests
+    // ==================== Requests ====================
     public CollectionReference getRequestsCollection() {
         return db.collection(COLLECTION_REQUESTS);
     }
@@ -68,24 +69,7 @@ public class FirestoreManager {
                 .orderBy("date", Query.Direction.DESCENDING);
     }
 
-    public interface OnTaskCompleteListener {
-        void onSuccess();
-        void onFailure(String error);
-    }
-
-    public interface OnUserFetchListener {
-        void onUserFetched(UserRecord user);
-        void onFailure(String error);
-    }
-
-    public interface OnListFetchListener<T> {
-        void onListFetched(java.util.List<T> list);
-        void onFailure(String error);
-    }
-
-    // --- Social / Community Methods ---
-
-    // Users
+    // ==================== Users ====================
     public void getUser(String uid, OnUserFetchListener listener) {
         db.collection(COLLECTION_USERS).document(uid).get()
                 .addOnSuccessListener(documentSnapshot -> {
@@ -129,7 +113,6 @@ public class FirestoreManager {
     }
 
     public void saveUser(UserRecord user, OnTaskCompleteListener listener) {
-        // Automatically set recycleCenter to null if the user is not an Admin
         if (!"Admin".equals(user.getRole())) {
             user.setRecycleCenter(null);
         }
@@ -145,7 +128,37 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
-    // Communities
+    // ==================== 积分相关的新方法 ====================
+    public void updateUserPoints(String uid, int newPoints, OnTaskCompleteListener listener) {
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("points", newPoints);
+
+        db.collection(COLLECTION_USERS).document(uid).update(updates)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void addPoints(String uid, int pointsToAdd, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_USERS).document(uid)
+                .update("points", FieldValue.increment(pointsToAdd))
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void getUserPoints(String uid, OnPointsFetchListener listener) {
+        db.collection(COLLECTION_USERS).document(uid).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Long points = documentSnapshot.getLong("points");
+                        listener.onPointsFetched(points != null ? points.intValue() : 0);
+                    } else {
+                        listener.onPointsFetched(0);
+                    }
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    // ==================== Community ====================
     public void getAllCommunities(OnListFetchListener<CommunityModel> listener) {
         db.collection(COLLECTION_COMMUNITIES).get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -156,12 +169,12 @@ public class FirestoreManager {
 
     public void subscribeToCommunity(String uid, String communityID, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_USERS).document(uid)
-                .update("subscribedCommunities", com.google.firebase.firestore.FieldValue.arrayUnion(communityID))
+                .update("subscribedCommunities", FieldValue.arrayUnion(communityID))
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
-    // Posts
+    // ==================== Posts ====================
     public void createPost(CommunityPost post, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_POSTS).document(post.getPostID()).set(post)
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
@@ -196,18 +209,17 @@ public class FirestoreManager {
 
     public void toggleLike(String postID, boolean isLiked, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_POSTS).document(postID)
-                .update("likes", com.google.firebase.firestore.FieldValue.increment(isLiked ? 1 : -1))
+                .update("likes", FieldValue.increment(isLiked ? 1 : -1))
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
-    // Comments
+    // ==================== Comments ====================
     public void addComment(CommunityComment comment, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_COMMENTS).add(comment)
                 .addOnSuccessListener(documentReference -> {
-                    // Increment comment count on post
                     db.collection(COLLECTION_POSTS).document(comment.getPostID())
-                            .update("commentsCount", com.google.firebase.firestore.FieldValue.increment(1));
+                            .update("commentsCount", FieldValue.increment(1));
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
@@ -222,5 +234,26 @@ public class FirestoreManager {
                     listener.onListFetched(queryDocumentSnapshots.toObjects(CommunityComment.class));
                 })
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    // ==================== Callback Interfaces ====================
+    public interface OnTaskCompleteListener {
+        void onSuccess();
+        void onFailure(String error);
+    }
+
+    public interface OnUserFetchListener {
+        void onUserFetched(UserRecord user);
+        void onFailure(String error);
+    }
+
+    public interface OnListFetchListener<T> {
+        void onListFetched(java.util.List<T> list);
+        void onFailure(String error);
+    }
+
+    public interface OnPointsFetchListener {
+        void onPointsFetched(int points);
+        void onFailure(String error);
     }
 }

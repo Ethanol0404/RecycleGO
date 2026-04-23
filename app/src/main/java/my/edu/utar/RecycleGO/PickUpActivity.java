@@ -7,7 +7,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -21,6 +20,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.RecycleRequest;
+import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class PickUpActivity extends Fragment {
 
@@ -28,7 +28,6 @@ public class PickUpActivity extends Fragment {
     private com.google.android.material.card.MaterialCardView cardPhoto;
     private ImageButton btnPhoto;
     private Button btnSubmit;
-    private TextView tvPhotoStatus;
 
     private String flow = "STATUS_TO_FORM";
     private String selectedCenterId = null;
@@ -41,7 +40,6 @@ public class PickUpActivity extends Fragment {
                 if (uri != null) {
                     btnPhoto.setImageURI(uri);
                     btnPhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    if (tvPhotoStatus != null) tvPhotoStatus.setVisibility(View.GONE);
                 }
             }
     );
@@ -52,7 +50,6 @@ public class PickUpActivity extends Fragment {
                 if (bitmap != null) {
                     btnPhoto.setImageBitmap(bitmap);
                     btnPhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    if (tvPhotoStatus != null) tvPhotoStatus.setVisibility(View.GONE);
                 }
             }
     );
@@ -84,11 +81,82 @@ public class PickUpActivity extends Fragment {
                 .commit();
     }
 
+    // ==================== 新增：计算积分的方法 ====================
+    private int calculatePoints(String category, double estimatedWeight) {
+        // 根据回收类型和重量计算积分
+        int basePoints = 0;
+
+        if (category.contains("Plastic")) {
+            basePoints = 10;
+        } else if (category.contains("Metal")) {
+            basePoints = 15;
+        } else if (category.contains("Paper")) {
+            basePoints = 5;
+        } else if (category.contains("Glass")) {
+            basePoints = 8;
+        }
+
+        // 每公斤额外加分
+        int weightPoints = (int) (estimatedWeight * 5);
+
+        return basePoints + weightPoints;
+    }
+
     private void submitToFirestore(RecycleRequest request) {
+        // 先提交回收请求
         firestoreManager.submitRequest(request, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(getContext(), "Request Submitted Successfully!", Toast.LENGTH_SHORT).show();
+                // 回收请求提交成功后，增加用户积分
+                addPointsForRecycle(request);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void addPointsForRecycle(RecycleRequest request) {
+        // 获取当前用户ID
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
+        String currentUid = prefs.getString("loggedInUid", "");
+
+        if (currentUid.isEmpty()) {
+            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 计算积分（这里重量默认2kg，您可以根据实际情况调整）
+        double estimatedWeight = 2.0; // 默认重量，可以从输入框获取
+        int earnedPoints = calculatePoints(request.getCategory(), estimatedWeight);
+
+        // 增加积分
+        firestoreManager.addPoints(currentUid, earnedPoints, new FirestoreManager.OnTaskCompleteListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(getContext(), "Request Submitted! +" + earnedPoints + " points!", Toast.LENGTH_LONG).show();
+
+                // 同时更新 totalRecycled 计数
+                firestoreManager.getUser(currentUid, new FirestoreManager.OnUserFetchListener() {
+                    @Override
+                    public void onUserFetched(UserRecord user) {
+                        if (user != null) {
+                            int newTotal = user.getTotalRecycled() + 1;
+                            java.util.Map<String, Object> updates = new java.util.HashMap<>();
+                            updates.put("totalRecycled", newTotal);
+                            firestoreManager.updateUser(currentUid, updates, null);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        // 忽略错误，积分已经增加成功
+                    }
+                });
+
+                // 跳转到 RecycleStatus 页面
                 getParentFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, new RecycleStatus())
                         .commit();
@@ -96,7 +164,11 @@ public class PickUpActivity extends Fragment {
 
             @Override
             public void onFailure(String error) {
-                Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Points update failed: " + error, Toast.LENGTH_SHORT).show();
+                // 即使积分更新失败，也跳转到状态页面
+                getParentFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new RecycleStatus())
+                        .commit();
             }
         });
     }
@@ -111,7 +183,6 @@ public class PickUpActivity extends Fragment {
 
         cardPhoto = view.findViewById(R.id.cardPhoto);
         btnPhoto = view.findViewById(R.id.btnPhoto);
-        tvPhotoStatus = view.findViewById(R.id.tvPhotoStatus);
         etCategory = view.findViewById(R.id.etCategory);
         etDate = view.findViewById(R.id.etDate);
         etContact = view.findViewById(R.id.etContact);
