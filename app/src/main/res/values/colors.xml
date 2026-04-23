@@ -2,4 +2,8 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="chat_bg">#DDE8A6</color>
+    <color name="nav_bg">#254E00</color>
+    <color name="text_dark">#1A202C</color>
+    <color name="input_hint">#A0AEC0</color>
 </resources>

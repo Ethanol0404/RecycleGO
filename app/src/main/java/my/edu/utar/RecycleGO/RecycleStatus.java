@@ -127,7 +127,9 @@ public class RecycleStatus extends Fragment {
                     RecycleRequest req = doc.toObject(RecycleRequest.class);
                     allItems.add(req);
                 }
-                adapter.notifyDataSetChanged();
+                if (adapter != null) {
+                    adapter.notifyDataSetChanged();
+                }
             }
         });
     }
@@ -136,12 +138,16 @@ public class RecycleStatus extends Fragment {
         firestoreManager.updateRequestStatus(requestId, newStatus, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(getContext(), "Status updated to " + newStatus, Toast.LENGTH_SHORT).show();
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Status updated to " + newStatus, Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
             public void onFailure(String error) {
-                Toast.makeText(getContext(), "Fail: " + error, Toast.LENGTH_SHORT).show();
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Fail: " + error, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

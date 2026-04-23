@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/image_user_avatar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/useravatar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:contentDescription="@string/user_avatar" />
+
+    <LinearLayout
+        android:id="@+id/message_content_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:gravity="end"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/image_user_avatar"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="280dp"
+        app:layout_constraintWidth_default="wrap">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_message_image"
+            android:layout_width="240dp"
+            android:layout_height="180dp"
+            android:layout_marginBottom="4dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/image_message_user"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="@string/upload_photo" />
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/text_message_user"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_user_message"
+            android:padding="16dp"
+            android:textColor="#1A202C"
+            android:textSize="16sp"
+            android:breakStrategy="high_quality" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

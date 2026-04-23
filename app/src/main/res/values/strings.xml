@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">RecycleGO</string>
-    <!-- TODO: Remove or change this placeholder text -->
+    <string name="user_avatar">User Avatar</string>
+    <string name="upload_photo">Upload a photo</string>
+    <string name="ai_avatar">AI Avatar</string>
+    <string name="welcome_format">Let’s Recycle,\n%1$s!</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
