@@ -45,10 +45,10 @@ public class AdapterCommunityPost extends RecyclerView.Adapter<AdapterCommunityP
         CommunityPost post = postList.get(position);
 
         holder.tvUsername.setText(post.getAuthorName());
-        
+
         SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy", Locale.getDefault());
         holder.tvDate.setText(sdf.format(new Date(post.getTimestamp())));
-        
+
         holder.tvContent.setText(post.getContent());
         holder.tvLikes.setText(String.valueOf(post.getLikes()));
         holder.tvComments.setText(String.valueOf(post.getCommentsCount()));
@@ -59,8 +59,8 @@ public class AdapterCommunityPost extends RecyclerView.Adapter<AdapterCommunityP
             File imgFile = ImageManager.getImageFile(holder.itemView.getContext(), post.getPhotoUrl());
             if (imgFile != null && imgFile.exists()) {
                 Glide.with(holder.itemView.getContext())
-                    .load(imgFile)
-                    .into(holder.ivPostImage);
+                        .load(imgFile)
+                        .into(holder.ivPostImage);
             } else {
                 // For demo, if file not found locally, maybe show a placeholder
                 holder.ivPostImage.setVisibility(View.GONE);
@@ -82,7 +82,7 @@ public class AdapterCommunityPost extends RecyclerView.Adapter<AdapterCommunityP
             int newLikes = post.getLikes() + 1;
             post.setLikes(newLikes);
             holder.tvLikes.setText(String.valueOf(newLikes));
-            
+
             firestoreManager.toggleLike(post.getPostID(), true, new FirestoreManager.OnTaskCompleteListener() {
                 @Override
                 public void onSuccess() {}

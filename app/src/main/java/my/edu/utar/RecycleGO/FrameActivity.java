@@ -10,7 +10,6 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -71,10 +70,31 @@ public class FrameActivity extends AppCompatActivity {
             });
         }
 
-        if (btnHome != null) btnHome.setOnClickListener(v -> replaceFragment(new Main()));
-        if (btnRecycle != null) btnRecycle.setOnClickListener(v -> replaceFragment(new RecycleStatus()));
-        if (btnLocation != null) btnLocation.setOnClickListener(v -> replaceFragment(new Map()));
-        if (btnGroup != null) btnGroup.setOnClickListener(v -> replaceFragment(new AIAssistant()));
+        if (btnHome != null) btnHome.setOnClickListener(v -> replaceFragment(new HomeFragment()));
+
+        if (btnCalendar != null) {
+            btnCalendar.setOnClickListener(v -> {
+                replaceFragment(new ActivityFragment());
+            });
+        }
+
+        if (btnRecycle != null) {
+            btnRecycle.setOnClickListener(v -> {
+                replaceFragment(new RecycleStatus());
+            });
+        }
+
+        if (btnLocation != null) {
+            btnLocation.setOnClickListener(v -> {
+                replaceFragment(new Map());
+            });
+        }
+
+        if (btnGroup != null) {
+            btnGroup.setOnClickListener(v -> {
+                replaceFragment(new AIAssistant());
+            });
+        }
     }
 
     private void replaceFragment(Fragment fragment) {

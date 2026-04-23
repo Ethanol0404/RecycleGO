@@ -79,7 +79,7 @@ public class LoginActivity extends AppCompatActivity {
                             editor.apply();
 
                             Toast.makeText(LoginActivity.this, "Login Successful as " + role, Toast.LENGTH_SHORT).show();
-                            
+
                             Intent intent = new Intent(LoginActivity.this, FrameActivity.class);
                             startActivity(intent);
                             finish();
@@ -106,4 +106,4 @@ public class LoginActivity extends AppCompatActivity {
         });
 
     }
-}
+}

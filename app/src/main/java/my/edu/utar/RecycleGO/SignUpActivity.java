@@ -3,6 +3,7 @@ package my.edu.utar.RecycleGO;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -22,7 +23,7 @@ import java.util.UUID;
 
 public class SignUpActivity extends AppCompatActivity {
 
-    EditText etUsername, etEmail, etPassword, etRetypePassword;
+    EditText etUsername, etEmail, etPassword, etRetypePassword, etRecycleCenter;
     Spinner spinnerSignUpRole;
     Button btnSignUp;
     TextView tvSignIn;
@@ -46,6 +47,7 @@ public class SignUpActivity extends AppCompatActivity {
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         etRetypePassword = findViewById(R.id.etRetypePassword);
+        etRecycleCenter = findViewById(R.id.etRecycleCenter);
         spinnerSignUpRole = findViewById(R.id.spinnerSignUpRole);
         btnSignUp = findViewById(R.id.btnSignUp);
         tvSignIn = findViewById(R.id.tvSignIn);
@@ -55,6 +57,22 @@ public class SignUpActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roles);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerSignUpRole.setAdapter(adapter);
+
+        // Show/Hide Recycle Center field based on role
+        spinnerSignUpRole.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedRole = parent.getItemAtPosition(position).toString();
+                if (selectedRole.equals("Admin")) {
+                    etRecycleCenter.setVisibility(View.VISIBLE);
+                } else {
+                    etRecycleCenter.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
 
         // Sign In text listener
         tvSignIn.setOnClickListener(new View.OnClickListener() {
@@ -69,14 +87,20 @@ public class SignUpActivity extends AppCompatActivity {
         btnSignUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String username = etUsername.getText().toString();
-                String email = etEmail.getText().toString();
-                String password = etPassword.getText().toString();
-                String retypePassword = etRetypePassword.getText().toString();
+                String username = etUsername.getText().toString().trim();
+                String email = etEmail.getText().toString().trim();
+                String password = etPassword.getText().toString().trim();
+                String retypePassword = etRetypePassword.getText().toString().trim();
                 String role = spinnerSignUpRole.getSelectedItem().toString();
+                String recycleCenter = etRecycleCenter.getText().toString().trim();
 
                 if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
                     Toast.makeText(SignUpActivity.this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (role.equals("Admin") && recycleCenter.isEmpty()) {
+                    Toast.makeText(SignUpActivity.this, "Please enter your Recycle Center Name", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -95,7 +119,10 @@ public class SignUpActivity extends AppCompatActivity {
                             // Register user
                             String uid = UUID.randomUUID().toString();
                             UserRecord newUser = new UserRecord(uid, username, email, password, role);
-                            
+                            if (role.equals("Admin")) {
+                                newUser.setRecycleCenter(recycleCenter);
+                            }
+
                             firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
                                 @Override
                                 public void onSuccess() {
@@ -121,4 +148,4 @@ public class SignUpActivity extends AppCompatActivity {
 
         findViewById(R.id.btnClose).setOnClickListener(v -> finish());
     }
-}
+}
