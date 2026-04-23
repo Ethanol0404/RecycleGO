@@ -27,7 +27,7 @@
             android:layout_centerVertical="true"
             android:clipToOutline="true"
             android:scaleType="centerInside"
-            android:src="@drawable/profile_pic"
+            android:src="@drawable/useravatar"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless" />
@@ -98,7 +98,7 @@
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="0dp"
-        android:layout_height="60dp"
+        android:layout_height="56dp"
         android:background="@color/nav_bg"
         android:gravity="center"
         android:orientation="horizontal"
@@ -114,8 +114,10 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/calender_logo"
-            app:tint="@color/white" />
+            android:src="@drawable/calender"
+            android:scaleType="centerInside"
+            android:padding="14dp"
+            app:tint="@null" />
 
         <ImageButton
             android:id="@+id/btn_recycle"
@@ -123,12 +125,14 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_recycle"
-            app:tint="@color/white" />
+            android:src="@drawable/request"
+            android:scaleType="centerInside"
+            android:padding="14dp"
+            app:tint="@null" />
 
         <!-- Spacer for Home Button -->
         <View
-            android:layout_width="72dp"
+            android:layout_width="48dp"
             android:layout_height="1dp" />
 
         <ImageButton
@@ -137,8 +141,10 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_location"
-            app:tint="@color/white" />
+            android:src="@drawable/location"
+            android:scaleType="centerInside"
+            android:padding="14dp"
+            app:tint="@null" />
 
         <ImageButton
             android:id="@+id/btn_group"
@@ -146,8 +152,10 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_group"
-            app:tint="@color/white" />
+            android:src="@drawable/community"
+            android:scaleType="centerInside"
+            android:padding="14dp"
+            app:tint="@null" />
 
     </LinearLayout>
 
@@ -158,13 +166,13 @@
         android:layout_height="72dp"
         android:background="@drawable/circle_home_button"
         android:elevation="8dp"
-        android:padding="16dp"
+        android:padding="22dp"
         android:scaleType="centerInside"
-        android:src="@drawable/home_logo"
+        android:src="@drawable/homeic"
+        app:tint="@null"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="12dp"
-        app:tint="@color/white" />
+        android:layout_marginBottom="16dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

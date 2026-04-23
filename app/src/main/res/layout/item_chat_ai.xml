@@ -11,7 +11,7 @@
         android:layout_height="40dp"
         android:src="@drawable/aiavatar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         android:contentDescription="@string/ai_avatar" />
 
     <TextView
@@ -28,6 +28,7 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/image_ai_avatar"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintWidth_max="280dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

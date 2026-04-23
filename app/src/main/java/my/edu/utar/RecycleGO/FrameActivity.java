@@ -52,7 +52,7 @@ public class FrameActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             FragmentManager fragmentManager = getSupportFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.replace(R.id.fragment_container, new Main());
+            fragmentTransaction.replace(R.id.fragment_container, new HomeFragment());
             fragmentTransaction.commit();
         }
 
@@ -67,7 +67,7 @@ public class FrameActivity extends AppCompatActivity {
             profileImage.setOnClickListener(v -> replaceFragment(new UserProfileActivity()));
         }
 
-        if (btnHome != null) btnHome.setOnClickListener(v -> replaceFragment(new Main()));
+        if (btnHome != null) btnHome.setOnClickListener(v -> replaceFragment(new HomeFragment()));
 
         if (btnCalendar != null) {
             btnCalendar.setOnClickListener(v -> {

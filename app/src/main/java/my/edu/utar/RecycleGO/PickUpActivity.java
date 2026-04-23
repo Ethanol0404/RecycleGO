@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -23,24 +24,24 @@ import my.edu.utar.RecycleGO.database.RecycleRequest;
 
 public class PickUpActivity extends Fragment {
 
-    // 1. Move variables here (Class Level) so the whole class can "see" them
     private TextInputEditText etCategory, etDate, etContact, etRemarks;
     private com.google.android.material.card.MaterialCardView cardPhoto;
     private ImageButton btnPhoto;
     private Button btnSubmit;
+    private TextView tvPhotoStatus;
 
     private String flow = "STATUS_TO_FORM";
     private String selectedCenterId = null;
     private String selectedCenterName = null;
     private FirestoreManager firestoreManager;
 
-    // 2. Define launchers at the top
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
                 if (uri != null) {
                     btnPhoto.setImageURI(uri);
                     btnPhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    if (tvPhotoStatus != null) tvPhotoStatus.setVisibility(View.GONE);
                 }
             }
     );
@@ -51,6 +52,7 @@ public class PickUpActivity extends Fragment {
                 if (bitmap != null) {
                     btnPhoto.setImageBitmap(bitmap);
                     btnPhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    if (tvPhotoStatus != null) tvPhotoStatus.setVisibility(View.GONE);
                 }
             }
     );
@@ -105,20 +107,16 @@ public class PickUpActivity extends Fragment {
             ((FrameActivity) getActivity()).setHeaderVisible(true);
         }
 
-        // 3. Store the inflated view in a variable first!
         View view = inflater.inflate(R.layout.activity_pick_up, container, false);
 
-        // 4. Initialize views using that 'view' variable
-        // Make sure these IDs match your XML exactly (I used etCategory for the photo text based on your logic)
         cardPhoto = view.findViewById(R.id.cardPhoto);
         btnPhoto = view.findViewById(R.id.btnPhoto);
+        tvPhotoStatus = view.findViewById(R.id.tvPhotoStatus);
         etCategory = view.findViewById(R.id.etCategory);
         etDate = view.findViewById(R.id.etDate);
         etContact = view.findViewById(R.id.etContact);
         etRemarks = view.findViewById(R.id.etRemarks);
         btnSubmit = view.findViewById(R.id.btnSubmit);
-
-        // --- Logic Sections ---
 
         btnPhoto.setOnClickListener(v -> {
             String[] options = {"Take Photo", "Choose from Gallery"};
@@ -165,7 +163,6 @@ public class PickUpActivity extends Fragment {
             datePicker.show(getParentFragmentManager(), "DATE_PICKER");
         });
 
-        //submit
         btnSubmit.setOnClickListener(v -> {
             String category = etCategory.getText().toString().trim();
             String date = etDate.getText().toString().trim();
@@ -195,7 +192,5 @@ public class PickUpActivity extends Fragment {
         });
 
         return view;
-
     }
 }
-

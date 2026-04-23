@@ -41,7 +41,7 @@
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_marginTop="20dp"
-        android:src="@drawable/profile_pic"
+        android:src="@drawable/useravatar"
         app:layout_constraintBottom_toTopOf="@+id/tvProfileTitle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
