@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">RecycleGO</string>
+    <string name="user_avatar">User Avatar</string>
+    <string name="upload_photo">Upload a photo</string>
+    <string name="ai_avatar">AI Avatar</string>
+    <string name="welcome_format">Let’s Recycle,\n%1$s!</string>
 </resources>

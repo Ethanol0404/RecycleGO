@@ -2,12 +2,12 @@ package my.edu.utar.RecycleGO;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -91,7 +91,11 @@ public class Map extends Fragment {
         super.onCreate(savedInstanceState);
         Context ctx = requireContext().getApplicationContext();
         Configuration.getInstance().setUserAgentValue(ctx.getPackageName());
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        
+        // Fix: Use non-deprecated SharedPreferences access
+        SharedPreferences prefs = ctx.getSharedPreferences(ctx.getPackageName() + "_preferences", Context.MODE_PRIVATE);
+        Configuration.getInstance().load(ctx, prefs);
+        
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         firestoreManager = new FirestoreManager();
 

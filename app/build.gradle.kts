@@ -1,14 +1,11 @@
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
-
 }
 
 android {
     namespace = "my.edu.utar.RecycleGO"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "my.edu.utar.RecycleGO"
@@ -46,16 +43,18 @@ dependencies {
     implementation(libs.osmbonuspack)
     implementation(libs.play.services.location)
 
-    //firebase
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    implementation("androidx.core:core-splashscreen:1.2.0")
 
+    //firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
 
-    // Remove Room Database as we are migrating to Firestore
-    // implementation(libs.room.runtime)
-    // annotationProcessor(libs.room.compiler)
+    // Gemini AI - Corrected to 0.9.0 (latest stable) for Gemini 1.5 support
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation("com.google.guava:guava:33.3.0-android")
+    implementation("org.reactivestreams:reactive-streams:1.0.4")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
