@@ -23,11 +23,12 @@ import java.util.Map;
 
 public class UserProfileActivity extends Fragment {
 
-    EditText etUsername, etEmail, etPhone;
+    EditText etUsername, etEmail, etPhone, etRecycleCenter;
     ImageButton btnClose;
     Button btnUpdate, btnLogout;
     FirestoreManager firestoreManager;
     String userEmail;
+    String userRole = "";
 
     public UserProfileActivity() {
         // Required empty public constructor
@@ -54,6 +55,7 @@ public class UserProfileActivity extends Fragment {
         etUsername = view.findViewById(R.id.etProfileUsername);
         etEmail = view.findViewById(R.id.etProfileEmail);
         etPhone = view.findViewById(R.id.etProfilePhone);
+        etRecycleCenter = view.findViewById(R.id.etProfileRecycleCenter);
         btnUpdate = view.findViewById(R.id.btnUpdateProfile);
         btnLogout = view.findViewById(R.id.btnLogout);
         btnClose = view.findViewById(R.id.btnClose2);
@@ -61,11 +63,9 @@ public class UserProfileActivity extends Fragment {
         btnClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment nextFragment = new my.edu.utar.RecycleGO.Main();
-                getParentFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, nextFragment)
-                        .addToBackStack(null)
-                        .commit();
+                if (getActivity() != null) {
+                    getActivity().getSupportFragmentManager().popBackStack();
+                }
             }
         });
 
@@ -83,8 +83,9 @@ public class UserProfileActivity extends Fragment {
         btnUpdate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String username = etUsername.getText().toString();
-                String phone = etPhone.getText().toString();
+                String username = etUsername.getText().toString().trim();
+                String phone = etPhone.getText().toString().trim();
+                String recycleCenter = etRecycleCenter.getText().toString().trim();
 
                 if (username.isEmpty()) {
                     Toast.makeText(getContext(), "Username cannot be empty", Toast.LENGTH_SHORT).show();
@@ -94,6 +95,11 @@ public class UserProfileActivity extends Fragment {
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("username", username);
                 updates.put("phone", phone);
+                
+                // Only update recycleCenter if the user is an Admin
+                if ("Admin".equalsIgnoreCase(userRole)) {
+                    updates.put("recycleCenter", recycleCenter);
+                }
 
                 String uid = sharedPreferences.getString("loggedInUid", "");
                 if (uid.isEmpty()) {
@@ -139,6 +145,16 @@ public class UserProfileActivity extends Fragment {
                     etUsername.setText(user.getUsername());
                     etEmail.setText(user.getEmail());
                     etPhone.setText(user.getPhone());
+                    
+                    userRole = user.getRole();
+                    
+                    // Role-based UI visibility
+                    if ("Admin".equalsIgnoreCase(userRole)) {
+                        etRecycleCenter.setVisibility(View.VISIBLE);
+                        etRecycleCenter.setText(user.getRecycleCenter());
+                    } else {
+                        etRecycleCenter.setVisibility(View.GONE);
+                    }
                 }
             }
 

@@ -13,8 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.25" />
-
+        app:layout_constraintGuide_percent="0.3" />
 
     <View
         android:id="@+id/profileHeaderBg"
@@ -33,20 +32,34 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_close"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#FFFFFF" />
+
+    <!-- Profile Picture in Header -->
+    <ImageView
+        android:id="@+id/ivProfilePicLarge"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="20dp"
+        android:src="@drawable/profile_pic"
+        app:layout_constraintBottom_toTopOf="@+id/tvProfileTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
 
     <TextView
         android:id="@+id/tvProfileTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:text="My Profile"
         android:textColor="@android:color/white"
-        android:textSize="30sp"
+        android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@+id/guidelineProfile"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -69,7 +82,8 @@
                 android:drawableStart="@drawable/ic_user"
                 android:drawablePadding="12dp"
                 android:hint="Username"
-                android:paddingStart="16dp" />
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
 
             <EditText
                 android:id="@+id/etProfileEmail"
@@ -79,8 +93,10 @@
                 android:background="@drawable/edit_text_background"
                 android:drawableStart="@drawable/ic_email"
                 android:drawablePadding="12dp"
+                android:enabled="false"
                 android:hint="Email"
-                android:paddingStart="16dp" />
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
 
             <EditText
                 android:id="@+id/etProfilePhone"
@@ -91,7 +107,22 @@
                 android:drawableStart="@drawable/ic_phone"
                 android:drawablePadding="12dp"
                 android:hint="Phone Number"
-                android:paddingStart="16dp" />
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
+
+            <!-- Recycle Center Field (Visible for Admin only) -->
+            <EditText
+                android:id="@+id/etProfileRecycleCenter"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/edit_text_background"
+                android:drawableStart="@drawable/ic_location"
+                android:drawablePadding="12dp"
+                android:hint="Recycle Center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone" />
 
             <Button
                 android:id="@+id/btnUpdateProfile"
@@ -101,6 +132,7 @@
                 android:backgroundTint="#2D5D5B"
                 android:text="Update Info"
                 android:textAllCaps="false"
+                android:textColor="@android:color/white"
                 app:cornerRadius="30dp" />
 
             <Button

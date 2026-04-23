@@ -9,6 +9,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -18,21 +19,19 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
+
 public class FrameActivity extends AppCompatActivity {
     private RelativeLayout header;
-    private TextView tvUsername;
+    private TextView tvUsername, tvRole;
+    private FirestoreManager firestoreManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Fix: Removed EdgeToEdge to prevent black screen issue on some emulators
-        // If you want EdgeToEdge, it requires precise window insets handling
-        // EdgeToEdge.enable(this);
-
         setContentView(R.layout.fragment_frame);
 
-        // Fix: Added null check for the root view
         View mainView = findViewById(R.id.main);
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
@@ -42,18 +41,19 @@ public class FrameActivity extends AppCompatActivity {
             });
         }
 
+        firestoreManager = new FirestoreManager();
         header = findViewById(R.id.header);
         tvUsername = findViewById(R.id.username);
+        tvRole = findViewById(R.id.role);
 
-        // Load actual username
-        SharedPreferences prefs = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        String username = prefs.getString("loggedInUsername", "User");
-        if (tvUsername != null) {
-            tvUsername.setText(username);
-        }
+        // Fetch and display user data
+        loadUserData();
 
         if (savedInstanceState == null) {
-            replaceFragment(new Main());
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.replace(R.id.fragment_container, new Main());
+            fragmentTransaction.commit();
         }
 
         ImageView profileImage = findViewById(R.id.profileImage);
@@ -64,17 +64,14 @@ public class FrameActivity extends AppCompatActivity {
         ImageButton btnGroup = findViewById(R.id.btn_group);
 
         if (profileImage != null) {
-            profileImage.setOnClickListener(v -> {
-                Intent intent = new Intent(FrameActivity.this, UserProfileActivity.class);
-                startActivity(intent);
-            });
+            profileImage.setOnClickListener(v -> replaceFragment(new UserProfileActivity()));
         }
 
-        if (btnHome != null) btnHome.setOnClickListener(v -> replaceFragment(new HomeFragment()));
+        if (btnHome != null) btnHome.setOnClickListener(v -> replaceFragment(new Main()));
 
         if (btnCalendar != null) {
             btnCalendar.setOnClickListener(v -> {
-                replaceFragment(new ActivityFragment());
+                replaceFragment(new CampaignsActivity());
             });
         }
 
@@ -92,7 +89,29 @@ public class FrameActivity extends AppCompatActivity {
 
         if (btnGroup != null) {
             btnGroup.setOnClickListener(v -> {
-                replaceFragment(new AIAssistant());
+                replaceFragment(new Community());
+            });
+        }
+    }
+
+    private void loadUserData() {
+        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String email = sharedPreferences.getString("loggedInEmail", "");
+
+        if (!email.isEmpty()) {
+            firestoreManager.getUserByEmail(email, new FirestoreManager.OnUserFetchListener() {
+                @Override
+                public void onUserFetched(UserRecord user) {
+                    if (user != null) {
+                        if (tvUsername != null) tvUsername.setText(user.getUsername());
+                        if (tvRole != null) tvRole.setText(user.getRole().toUpperCase());
+                    }
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    Toast.makeText(FrameActivity.this, "Error loading header: " + error, Toast.LENGTH_SHORT).show();
+                }
             });
         }
     }
@@ -102,6 +121,7 @@ public class FrameActivity extends AppCompatActivity {
             FragmentManager fragmentManager = getSupportFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
             fragmentTransaction.replace(R.id.fragment_container, fragment);
+            fragmentTransaction.addToBackStack(null);
             fragmentTransaction.commit();
         } catch (Exception e) {
             e.printStackTrace();

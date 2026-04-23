@@ -1,6 +1,7 @@
 package my.edu.utar.RecycleGO;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.animation.Animation;
@@ -25,9 +26,17 @@ public class LaunchActivity extends AppCompatActivity {
         Animation rotate = AnimationUtils.loadAnimation(this, R.anim.rotate_infinitely);
         planet.startAnimation(rotate);
 
-        // Move to LoginActivity after 4 seconds
+        // Check if user is already logged in
+        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        boolean isLoggedIn = sharedPreferences.contains("loggedInEmail");
+
+        // Move to appropriate activity after 4 seconds
         new Handler().postDelayed(() -> {
-            startActivity(new Intent(this, LoginActivity.class));
+            if (isLoggedIn) {
+                startActivity(new Intent(this, FrameActivity.class));
+            } else {
+                startActivity(new Intent(this, LoginActivity.class));
+            }
             finish();
         }, 4000);
     }
