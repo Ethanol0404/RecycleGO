@@ -1,15 +1,11 @@
 package my.edu.utar.RecycleGO;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,13 +16,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import my.edu.utar.RecycleGO.database.FirestoreManager;
-import my.edu.utar.RecycleGO.database.UserRecord;
-
 public class FrameActivity extends AppCompatActivity {
     private RelativeLayout header;
-    private FirestoreManager firestoreManager;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,36 +30,8 @@ public class FrameActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Initialize FirestoreManager
-        firestoreManager = new FirestoreManager();
-
         //header view
         header = findViewById(R.id.header);
-
-        // User Info Views
-        TextView usernameTv = findViewById(R.id.username);
-        TextView roleTv = findViewById(R.id.role);
-
-        // Load User Data from SharedPreferences and Firestore
-        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        String email = sharedPreferences.getString("loggedInEmail", "");
-
-        if (!email.isEmpty()) {
-            firestoreManager.getUserByEmail(email, new FirestoreManager.OnUserFetchListener() {
-                @Override
-                public void onUserFetched(UserRecord user) {
-                    if (user != null) {
-                        usernameTv.setText(user.getUsername());
-                        roleTv.setText(user.getRole().toUpperCase());
-                    }
-                }
-
-                @Override
-                public void onFailure(String error) {
-                    Toast.makeText(FrameActivity.this, "Error loading user data: " + error, Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
 
         // Set default fragment
         if (savedInstanceState == null) {
@@ -88,10 +51,10 @@ public class FrameActivity extends AppCompatActivity {
             replaceFragment(new UserProfileActivity());
         });
         // Click listeners
-        btnHome.setOnClickListener(v -> replaceFragment(new Main()));
+        btnHome.setOnClickListener(v -> replaceFragment(new HomeFragment()));
 
         btnCalendar.setOnClickListener(v -> {
-            replaceFragment(new CampaignsActivity());
+            replaceFragment(new ActivityFragment());
         });
 
         btnRecycle.setOnClickListener(v -> {
@@ -99,7 +62,7 @@ public class FrameActivity extends AppCompatActivity {
         });
 
         btnLocation.setOnClickListener(v -> {
-              replaceFragment(new Map());
+            replaceFragment(new Map());
         });
 
         btnGroup.setOnClickListener(v -> {

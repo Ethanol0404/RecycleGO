@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" >
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -15,7 +13,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.GROUPASGN">
-
+        <activity
+            android:name=".HomeFragment"
+            android:exported="false" />
+        <activity
+            android:name=".ActivityFragment"
+            android:exported="false" />
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -25,30 +28,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".SignUpActivity"
             android:exported="false" />
-
         <activity
             android:name=".UserProfileActivity"
             android:exported="false" />
-
         <activity
             android:name=".SplashActivity"
             android:exported="false" />
-
-        <activity
-            android:name=".CreateCampaignActivity"
-            android:exported="false" />
-
         <activity
             android:name=".FrameActivity"
             android:exported="false" />
-            
-        <activity android:name=".CommunityProfileActivity" android:exported="false" />
-        <activity android:name=".CommunitySearchActivity" android:exported="false" />
-        <activity android:name=".CreatePostActivity" android:exported="false" />
+        <activity
+            android:name=".CommunityProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CommunitySearchActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CreatePostActivity"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -59,7 +59,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
     </application>
 
 </manifest>
