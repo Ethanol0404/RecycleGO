@@ -19,13 +19,16 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.firebase.firestore.ListenerRegistration;
+
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class FrameActivity extends AppCompatActivity {
     private RelativeLayout header;
-    private TextView tvUsername, tvRole;
+    private TextView tvUsername, tvLevel;
     private FirestoreManager firestoreManager;
+    private ListenerRegistration userListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +47,7 @@ public class FrameActivity extends AppCompatActivity {
         firestoreManager = new FirestoreManager();
         header = findViewById(R.id.header);
         tvUsername = findViewById(R.id.username);
-        tvRole = findViewById(R.id.role);
+        tvLevel = findViewById(R.id.role); // Keeping ID as 'role' but using for Level or changing in XML
 
         // Fetch and display user data
         loadUserData();
@@ -106,15 +109,22 @@ public class FrameActivity extends AppCompatActivity {
 
     private void loadUserData() {
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        String email = sharedPreferences.getString("loggedInEmail", "");
+        String uid = sharedPreferences.getString("loggedInUid", "");
 
-        if (!email.isEmpty()) {
-            firestoreManager.getUserByEmail(email, new FirestoreManager.OnUserFetchListener() {
+        if (!uid.isEmpty()) {
+            if (userListener != null) userListener.remove();
+            userListener = firestoreManager.listenToUser(uid, new FirestoreManager.OnUserFetchListener() {
                 @Override
                 public void onUserFetched(UserRecord user) {
                     if (user != null) {
                         if (tvUsername != null) tvUsername.setText(user.getUsername());
-                        if (tvRole != null) tvRole.setText(user.getRole().toUpperCase());
+                        
+                        // Calculate level based on points
+                        String level = "BRONZE";
+                        if (user.getPoints() > 5000) level = "GOLD";
+                        else if (user.getPoints() > 2000) level = "SILVER";
+                        
+                        if (tvLevel != null) tvLevel.setText(level);
                     }
                 }
 
@@ -142,5 +152,11 @@ public class FrameActivity extends AppCompatActivity {
         if (header != null) {
             header.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (userListener != null) userListener.remove();
     }
 }

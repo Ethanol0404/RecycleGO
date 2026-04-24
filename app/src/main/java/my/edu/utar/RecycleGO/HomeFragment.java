@@ -16,10 +16,13 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.List;
 import java.util.Random;
 
+import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
 import my.edu.utar.RecycleGO.utils.RecycleApiService;
 import my.edu.utar.RecycleGO.utils.RetrofitClient;
 import retrofit2.Call;
@@ -32,6 +35,10 @@ public class HomeFragment extends Fragment {
     CardView cardNews, cardRecycleNow, cardFindEvent, cardQuizPlastic, cardQuizFood;
     FloatingActionButton fabAiAssistant;
     ImageView imgPointsDropdown;
+
+    FirestoreManager firestoreManager;
+    String userId;
+    ListenerRegistration userListener;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -49,8 +56,9 @@ public class HomeFragment extends Fragment {
         txtTipTitle = view.findViewById(R.id.txt_tip_title);
         txtTipBody = view.findViewById(R.id.txt_tip_body);
 
-        // Load Points
-        loadPoints();
+        firestoreManager = new FirestoreManager();
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userId = prefs.getString("loggedInUid", "");
 
         // Points Arrow click listener
         if (imgPointsDropdown != null) {
@@ -121,9 +129,7 @@ public class HomeFragment extends Fragment {
         // AI Assistant
         if (fabAiAssistant != null) {
             fabAiAssistant.setOnClickListener(v -> {
-                // Change AIAssistant to extend Fragment (not DialogFragment)
                 AIAssistant assistant = new AIAssistant();
-
                 getParentFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, assistant)
                         .addToBackStack(null)
@@ -135,12 +141,30 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
-    private void loadPoints() {
-        if (getContext() != null) {
-            SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-            int points = prefs.getInt("totalPoints", 1000);
-            txtPoints.setText(String.valueOf(points));
+    private void startListeningToPoints() {
+        if (userId == null || userId.isEmpty()) {
+            txtPoints.setText("0");
+            return;
         }
+
+        if (userListener != null) {
+            userListener.remove();
+        }
+
+        // Real-time listener to Firebase Firestore
+        userListener = firestoreManager.listenToUser(userId, new FirestoreManager.OnUserFetchListener() {
+            @Override
+            public void onUserFetched(UserRecord userRecord) {
+                if (userRecord != null && isAdded()) {
+                    txtPoints.setText(String.valueOf(userRecord.getPoints()));
+                }
+            }
+
+            @Override
+            public void onFailure(String error) {
+                txtPoints.setText("0");
+            }
+        });
     }
 
     private void fetchRecyclingTip() {
@@ -169,7 +193,20 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        loadPoints();
         fetchRecyclingTip();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        startListeningToPoints();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (userListener != null) {
+            userListener.remove();
+        }
     }
 }

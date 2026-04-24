@@ -17,9 +17,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
-import java.util.UUID;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -28,6 +28,7 @@ public class SignUpActivity extends AppCompatActivity {
     Button btnSignUp;
     TextView tvSignIn;
     FirestoreManager firestoreManager;
+    FirebaseAuth mAuth;
     String selectedCenterId = "";
 
     @Override
@@ -42,6 +43,7 @@ public class SignUpActivity extends AppCompatActivity {
         });
 
         firestoreManager = new FirestoreManager();
+        mAuth = FirebaseAuth.getInstance();
 
         // Initialize views
         etUsername = findViewById(R.id.etUsername);
@@ -85,78 +87,66 @@ public class SignUpActivity extends AppCompatActivity {
         });
 
         // Sign In text listener
-        tvSignIn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
-            }
+        tvSignIn.setOnClickListener(v -> {
+            Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
         });
 
-        btnSignUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String username = etUsername.getText().toString().trim();
-                String email = etEmail.getText().toString().trim();
-                String password = etPassword.getText().toString().trim();
-                String retypePassword = etRetypePassword.getText().toString().trim();
-                String role = spinnerSignUpRole.getSelectedItem().toString();
-                String recycleCenter = etRecycleCenter.getText().toString().trim();
+        btnSignUp.setOnClickListener(v -> {
+            String username = etUsername.getText().toString().trim();
+            String email = etEmail.getText().toString().trim();
+            String password = etPassword.getText().toString().trim();
+            String retypePassword = etRetypePassword.getText().toString().trim();
+            String role = spinnerSignUpRole.getSelectedItem().toString();
+            String recycleCenter = etRecycleCenter.getText().toString().trim();
 
-                if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                    Toast.makeText(SignUpActivity.this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(SignUpActivity.this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (role.equals("Admin") && recycleCenter.isEmpty()) {
-                    Toast.makeText(SignUpActivity.this, "Please enter your Recycle Center Name", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (role.equals("Admin") && recycleCenter.isEmpty()) {
+                Toast.makeText(SignUpActivity.this, "Please enter your Recycle Center Name", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (!password.equals(retypePassword)) {
-                    Toast.makeText(SignUpActivity.this, "Passwords do not match", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (!password.equals(retypePassword)) {
+                Toast.makeText(SignUpActivity.this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                // Check if user already exists
-                firestoreManager.getUserByEmail(email, new FirestoreManager.OnUserFetchListener() {
-                    @Override
-                    public void onUserFetched(UserRecord existingUser) {
-                        if (existingUser != null) {
-                            Toast.makeText(SignUpActivity.this, "User with this email already exists", Toast.LENGTH_SHORT).show();
-                        } else {
-                            // Register user
-                            String uid = UUID.randomUUID().toString();
-                            UserRecord newUser = new UserRecord(uid, username, email, password, role);
-                            if (role.equals("Admin")) {
-                                if (!selectedCenterId.isEmpty()) {
-                                    newUser.getJoinedCenters().add(selectedCenterId);
-                                }
-                                newUser.setRecycleCenter(recycleCenter); // Keep name for display
+            // Register with Firebase Auth
+            mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        String uid = mAuth.getCurrentUser().getUid();
+                        UserRecord newUser = new UserRecord(uid, username, email, password, role);
+                        newUser.setPoints(0); // Start with 0
+                        if (role.equals("Admin")) {
+                            if (!selectedCenterId.isEmpty()) {
+                                newUser.getJoinedCenters().add(selectedCenterId);
+                            }
+                            newUser.setRecycleCenter(recycleCenter);
+                        }
+
+                        // Save additional data to Firestore
+                        firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
+                            @Override
+                            public void onSuccess() {
+                                Toast.makeText(SignUpActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                                finish();
                             }
 
-                            firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
-                                @Override
-                                public void onSuccess() {
-                                    Toast.makeText(SignUpActivity.this, "Registration Successful as " + role, Toast.LENGTH_SHORT).show();
-                                    finish(); // Go back to Login
-                                }
-
-                                @Override
-                                public void onFailure(String error) {
-                                    Toast.makeText(SignUpActivity.this, "Registration Failed: " + error, Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(String error) {
-                        Toast.makeText(SignUpActivity.this, "Error checking user: " + error, Toast.LENGTH_SHORT).show();
+                            @Override
+                            public void onFailure(String error) {
+                                Toast.makeText(SignUpActivity.this, "Firestore Error: " + error, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        Toast.makeText(SignUpActivity.this, "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
-            }
         });
 
         findViewById(R.id.btnClose).setOnClickListener(v -> finish());
@@ -173,4 +163,4 @@ public class SignUpActivity extends AppCompatActivity {
             }
         }
     }
-}
+}

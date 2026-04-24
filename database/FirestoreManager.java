@@ -1,14 +1,12 @@
 package my.edu.utar.RecycleGO.database;
 
 import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.ListenerRegistration;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,17 +80,6 @@ public class FirestoreManager {
     public void updateRequestStatus(String requestId, String newStatus, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_REQUESTS).document(requestId)
                 .update("status", newStatus)
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
-                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
-    }
-
-    public void acceptRequest(String requestId, String centerId, String centerName, OnTaskCompleteListener listener) {
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "Accepted");
-        updates.put("centerId", centerId);
-        updates.put("centerName", centerName);
-
-        db.collection(COLLECTION_REQUESTS).document(requestId).update(updates)
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
@@ -254,54 +241,31 @@ public class FirestoreManager {
 
     // ==================== Point Records ====================
     private void addPointRecord(String userId, int points, String activityType, OnTaskCompleteListener listener) {
-        DocumentReference ref = db.collection(COLLECTION_POINT_RECORDS).document(userId);
-        ref.get().addOnSuccessListener(doc -> {
-            List<String> activities = new ArrayList<>();
-            List<Long> pts = new ArrayList<>();
-            List<Timestamp> timestamps = new ArrayList<>();
-
-            if (doc.exists()) {
-                if (doc.get("activity") != null) activities = (List<String>) doc.get("activity");
-                if (doc.get("point") != null) pts = (List<Long>) doc.get("point");
-                if (doc.get("timestamp") != null) timestamps = (List<Timestamp>) doc.get("timestamp");
-            }
-
-            activities.add(activityType);
-            pts.add((long) points);
-            timestamps.add(Timestamp.now());
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("uid", userId);
-            data.put("activity", activities);
-            data.put("point", pts);
-            data.put("timestamp", timestamps);
-
-            ref.set(data)
-                    .addOnSuccessListener(aVoid -> { if (listener != null) listener.onSuccess(); })
-                    .addOnFailureListener(e -> { if (listener != null) listener.onFailure(e.getMessage()); });
-        }).addOnFailureListener(e -> {
-            if (listener != null) listener.onFailure(e.getMessage());
-        });
-    }
-
-    public void getPointHistory(String userId, OnPointsHistoryFetchListener listener) {
         db.collection(COLLECTION_POINT_RECORDS).document(userId).get()
                 .addOnSuccessListener(documentSnapshot -> {
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("activity", FieldValue.arrayUnion(activityType));
+                    updates.put("point", FieldValue.arrayUnion(points));
+                    
                     if (documentSnapshot.exists()) {
-                        List<String> activities = (List<String>) documentSnapshot.get("activity");
-                        List<Long> points = (List<Long>) documentSnapshot.get("point");
-                        List<Timestamp> timestamps = (List<Timestamp>) documentSnapshot.get("timestamp");
-
-                        if (activities == null) activities = new java.util.ArrayList<>();
-                        if (points == null) points = new java.util.ArrayList<>();
-                        if (timestamps == null) timestamps = new java.util.ArrayList<>();
-
-                        listener.onHistoryFetched(activities, points, timestamps);
+                        db.collection(COLLECTION_POINT_RECORDS).document(userId).update(updates)
+                                .addOnSuccessListener(aVoid -> {
+                                    if (listener != null) listener.onSuccess();
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (listener != null) listener.onFailure(e.getMessage());
+                                });
                     } else {
-                        listener.onHistoryFetched(new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>());
+                        updates.put("uid", userId);
+                        db.collection(COLLECTION_POINT_RECORDS).document(userId).set(updates)
+                                .addOnSuccessListener(aVoid -> {
+                                    if (listener != null) listener.onSuccess();
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (listener != null) listener.onFailure(e.getMessage());
+                                });
                     }
-                })
-                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+                });
     }
 
     public void saveQuizRecord(String userId, int points, OnTaskCompleteListener listener) {
@@ -335,22 +299,6 @@ public class FirestoreManager {
                     documentReference.update("communityID", id);
                     listener.onSuccess();
                 })
-                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
-    }
-
-    public void updateCommunity(CommunityModel community, OnTaskCompleteListener listener) {
-        if (community.getCommunityID() == null) {
-            listener.onFailure("Community ID is missing.");
-            return;
-        }
-        db.collection(COLLECTION_COMMUNITIES).document(community.getCommunityID()).set(community)
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
-                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
-    }
-
-    public void deleteCommunity(String communityId, OnTaskCompleteListener listener) {
-        db.collection(COLLECTION_COMMUNITIES).document(communityId).delete()
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
@@ -441,11 +389,6 @@ public class FirestoreManager {
 
     public interface OnPointsFetchListener {
         void onPointsFetched(int points);
-        void onFailure(String error);
-    }
-
-    public interface OnPointsHistoryFetchListener {
-        void onHistoryFetched(List<String> activities, List<Long> points, List<Timestamp> timestamps);
         void onFailure(String error);
     }
 }

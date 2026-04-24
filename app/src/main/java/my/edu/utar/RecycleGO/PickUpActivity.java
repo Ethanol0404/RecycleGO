@@ -148,7 +148,8 @@ public class PickUpActivity extends Fragment {
                     if (editRequest.getTargetCenterIds() != null && !editRequest.getTargetCenterIds().isEmpty()) {
                         selectedCenterIds = new ArrayList<>(editRequest.getTargetCenterIds());
                         selectedCenterNames = new ArrayList<>();
-                        //centerName might be a summary string if multiple.
+                        // Note: centerName might be a summary string if multiple. 
+                        // Usually we'd need to fetch full names if they aren't in the request.
                         selectedCenterNames.add(editRequest.getCenterName()); 
                     } else if (editRequest.getCenterId() != null) {
                         selectedCenterIds.add(editRequest.getCenterId());
@@ -170,7 +171,8 @@ public class PickUpActivity extends Fragment {
         } else {
             args.putString("flow", "STATUS_TO_FORM");
         }
-
+        
+        // Pass current form data as draft
         args.putString("category", draft.getCategory());
         args.putString("date", draft.getDate());
         args.putString("contact", draft.getContact());
@@ -233,7 +235,7 @@ public class PickUpActivity extends Fragment {
         double estimatedWeight = 2.0; 
         int earnedPoints = calculatePoints(request.getCategory(), estimatedWeight);
 
-        firestoreManager.addPoints(currentUid, earnedPoints, new FirestoreManager.OnTaskCompleteListener() {
+        firestoreManager.addPoints(currentUid, earnedPoints, "Recycle", new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
                 if (!isAdded()) return;
@@ -336,7 +338,7 @@ public class PickUpActivity extends Fragment {
                     }).show();
         });
 
-        String[] categories = {"Plastic", "Metal", "Paper", "Glass", "Others"};
+        String[] categories = {"Plastic", "Metal", "Paper", "Glass"};
         boolean[] checkedItems = {false, false, false, false};
 
         etCategory.setOnClickListener(v -> {
