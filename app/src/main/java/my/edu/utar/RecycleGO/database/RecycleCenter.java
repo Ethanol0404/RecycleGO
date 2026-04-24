@@ -12,6 +12,7 @@ public class RecycleCenter {
     public String operatingHours;
     public String supportedServices;
     public String phoneNumber;
+    public String pictureUrl;
     
     // Distance field (not persisted in Firestore)
     public transient float distance = 0f;

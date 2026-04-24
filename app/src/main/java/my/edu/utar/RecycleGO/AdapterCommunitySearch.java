@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,7 +15,6 @@ import com.bumptech.glide.Glide;
 
 import java.util.List;
 
-import de.hdodenhof.circleimageview.CircleImageView;
 import my.edu.utar.RecycleGO.database.CommunityModel;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 
@@ -42,11 +42,15 @@ public class AdapterCommunitySearch extends RecyclerView.Adapter<AdapterCommunit
         CommunityModel community = communityList.get(position);
         holder.tvName.setText(community.getName());
         
+        // Use Glide for safe loading into ImageView
         if (community.getIconUrl() != null && !community.getIconUrl().isEmpty()) {
             Glide.with(holder.itemView.getContext())
                 .load(community.getIconUrl())
                 .placeholder(R.drawable.profile_circle)
+                .error(R.drawable.profile_circle)
                 .into(holder.ivIcon);
+        } else {
+            holder.ivIcon.setImageResource(R.drawable.profile_circle);
         }
 
         holder.btnSubscribe.setOnClickListener(v -> {
@@ -77,7 +81,7 @@ public class AdapterCommunitySearch extends RecyclerView.Adapter<AdapterCommunit
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        CircleImageView ivIcon;
+        ImageView ivIcon;
         TextView tvName;
         Button btnSubscribe;
 

@@ -31,6 +31,7 @@ public class Community extends Fragment {
     private AdapterCommunityPost feedAdapter;
     private FirestoreManager firestoreManager;
     private String userUid;
+    private String userRole = "User";
     private String selectedCommunityId = ""; // Track current filter
     private List<String> subscribedIds = new ArrayList<>();
 
@@ -48,10 +49,22 @@ public class Community extends Fragment {
         // Use UID from SharedPreferences
         android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
         userUid = prefs.getString("loggedInUid", "");
+        userRole = prefs.getString("loggedInRole", "User");
 
         rvCommunities = view.findViewById(R.id.community_profileList);
         rvFeed = view.findViewById(R.id.rv_feed);
         FloatingActionButton btnAdd = view.findViewById(R.id.community_btnAdd);
+        FloatingActionButton btnAddGroup = view.findViewById(R.id.community_btnAddGroup);
+
+        if ("Admin".equalsIgnoreCase(userRole)) {
+            btnAddGroup.setVisibility(View.VISIBLE);
+            btnAddGroup.setOnClickListener(v -> {
+                getParentFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new AddCommunityFragment())
+                        .addToBackStack("ADD_COMMUNITY")
+                        .commit();
+            });
+        }
         
         EditText etSearchTrigger = view.findViewById(R.id.et_search_trigger);
         if (etSearchTrigger != null) {
@@ -112,9 +125,8 @@ public class Community extends Fragment {
                     fetchCommunityModels(subscribedIds);
                     loadFeed(java.util.Collections.singletonList(selectedCommunityId));
                 } else {
-                    // Handle case where user has no subscriptions
-                    communityAdapter.updateList(new ArrayList<>());
-                    feedAdapter.updateList(new ArrayList<>());
+                    // Handle case where user has no subscriptions - Load all communities for discovery
+                    fetchAllCommunitiesForDiscovery();
                 }
             }
 
@@ -122,6 +134,25 @@ public class Community extends Fragment {
             public void onFailure(String error) {
                 if (getContext() != null)
                     Toast.makeText(getContext(), "Error loading profile: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void fetchAllCommunitiesForDiscovery() {
+        firestoreManager.getAllCommunities(new FirestoreManager.OnListFetchListener<CommunityModel>() {
+            @Override
+            public void onListFetched(List<CommunityModel> list) {
+                communityAdapter.updateList(list);
+                if (!list.isEmpty()) {
+                    selectedCommunityId = list.get(0).getCommunityID();
+                    loadFeed(java.util.Collections.singletonList(selectedCommunityId));
+                }
+            }
+
+            @Override
+            public void onFailure(String error) {
+                if (getContext() != null)
+                    Toast.makeText(getContext(), "Discovery failed: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }

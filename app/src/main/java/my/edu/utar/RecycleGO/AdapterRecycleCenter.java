@@ -17,6 +17,8 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
 
     private List<RecycleCenter> centers;
     private OnItemClickListener listener;
+    private boolean isAdmin = false;
+    private List<String> joinedCenters = new java.util.ArrayList<>();
 
     public interface OnItemClickListener {
         void onItemClick(RecycleCenter center);
@@ -26,6 +28,18 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
     public AdapterRecycleCenter(List<RecycleCenter> centers, OnItemClickListener listener) {
         this.centers = centers;
         this.listener = listener;
+    }
+
+    public void setIsAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
+        notifyDataSetChanged();
+    }
+
+    public void setJoinedCenters(List<String> joinedCenters) {
+        if (joinedCenters != null) {
+            this.joinedCenters = joinedCenters;
+            notifyDataSetChanged();
+        }
     }
 
     @NonNull
@@ -48,8 +62,22 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
 
         holder.itemView.setOnClickListener(v -> listener.onItemClick(center));
         holder.btnMore.setOnClickListener(v -> {
-            // Handle "Details" button click
+            listener.onItemClick(center); // Trigger focus
         });
+
+        if (isAdmin) {
+            if (joinedCenters.contains(center.id)) {
+                holder.btnRecycle.setText("Joined");
+                holder.btnRecycle.setEnabled(false);
+            } else {
+                holder.btnRecycle.setText("Join");
+                holder.btnRecycle.setEnabled(true);
+            }
+        } else {
+            holder.btnRecycle.setText("Recycle");
+            holder.btnRecycle.setEnabled(true);
+        }
+        
         holder.btnRecycle.setOnClickListener(v -> listener.onRecycleClick(center));
     }
 

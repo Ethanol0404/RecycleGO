@@ -50,10 +50,20 @@ public class FrameActivity extends AppCompatActivity {
         loadUserData();
 
         if (savedInstanceState == null) {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.replace(R.id.fragment_container, new HomeFragment());
-            fragmentTransaction.commit();
+            String target = getIntent().getStringExtra("targetFragment");
+            Fragment fragment;
+            if ("MAP".equals(target)) {
+                fragment = new Map();
+                Bundle args = new Bundle();
+                args.putString("flow", getIntent().getStringExtra("flow"));
+                fragment.setArguments(args);
+            } else {
+                fragment = new HomeFragment();
+            }
+            
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .commit();
         }
 
         ImageView profileImage = findViewById(R.id.profileImage);

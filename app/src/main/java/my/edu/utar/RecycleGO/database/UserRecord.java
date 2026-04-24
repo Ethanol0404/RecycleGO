@@ -12,14 +12,17 @@ public class UserRecord {
     private String role;
     private String profilePicUrl;
     private List<String> subscribedCommunities;
-    private String recycleCenter;
+    private List<String> joinedCenters;
+    private String recycleCenter; // Added for Admin users
     private int points;
     private int totalRecycled;
 
     public UserRecord() {
         this.subscribedCommunities = new ArrayList<>();
+        this.joinedCenters = new ArrayList<>();
         this.points = 0;
         this.totalRecycled = 0;
+        this.recycleCenter = "";
     }
 
     public UserRecord(String uid, String username, String email, String password, String role) {
@@ -31,9 +34,10 @@ public class UserRecord {
         this.phone = "";
         this.profilePicUrl = "";
         this.subscribedCommunities = new ArrayList<>();
-        this.recycleCenter = "";
+        this.joinedCenters = new ArrayList<>();
         this.points = 0;
         this.totalRecycled = 0;
+        this.recycleCenter = "";
     }
 
     // Getters and Setters
@@ -60,6 +64,9 @@ public class UserRecord {
 
     public List<String> getSubscribedCommunities() { return subscribedCommunities; }
     public void setSubscribedCommunities(List<String> subscribedCommunities) { this.subscribedCommunities = subscribedCommunities; }
+
+    public List<String> getJoinedCenters() { return joinedCenters; }
+    public void setJoinedCenters(List<String> joinedCenters) { this.joinedCenters = joinedCenters; }
 
     public String getRecycleCenter() { return recycleCenter; }
     public void setRecycleCenter(String recycleCenter) { this.recycleCenter = recycleCenter; }

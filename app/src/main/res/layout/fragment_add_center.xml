@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add New Center"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#1A2A4E"
+            android:layout_marginBottom="24dp"/>
+
+        <EditText
+            android:id="@+id/et_center_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Center Name"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/et_center_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Address"
+            android:layout_marginBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+            <EditText
+                android:id="@+id/et_center_lat"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Latitude"
+                android:inputType="numberDecimal|numberSigned"/>
+            <EditText
+                android:id="@+id/et_center_lon"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Longitude"
+                android:inputType="numberDecimal|numberSigned"/>
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/et_center_hours"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Operating Hours (e.g. 9am - 5pm)"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/et_center_services"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Supported Services"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/et_center_phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Phone Number"
+            android:inputType="phone"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/et_center_pic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Picture URL"
+            android:layout_marginBottom="24dp"/>
+
+        <Button
+            android:id="@+id/btn_save_center"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Center"
+            android:backgroundTint="#4CAF50"
+            android:textColor="@android:color/white"/>
+
+    </LinearLayout>
+</ScrollView>

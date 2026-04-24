@@ -74,8 +74,9 @@ public class LoginActivity extends AppCompatActivity {
                             SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
                             SharedPreferences.Editor editor = sharedPreferences.edit();
                             editor.putString("loggedInEmail", email);
-                            editor.putString("loggedInUid", user.getUid()); // CRITICAL for social features
+                            editor.putString("loggedInUid", user.getUid());
                             editor.putString("loggedInUsername", user.getUsername());
+                            editor.putString("loggedInRole", role); // Saved Role
                             editor.apply();
 
                             Toast.makeText(LoginActivity.this, "Login Successful as " + role, Toast.LENGTH_SHORT).show();

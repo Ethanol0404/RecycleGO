@@ -14,6 +14,7 @@ room = "2.6.1"
 playServicesLocation = "21.3.0"
 glide = "4.16.0"
 circleimageview = "3.1.0"
+googleServices = "4.4.2"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -35,3 +36,4 @@ circleimageview = { group = "de.hdodenhof", name = "circleimageview", version.re
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

@@ -1,31 +1,41 @@
 package my.edu.utar.RecycleGO;
 
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
 
-import android.widget.Toast;
-import androidx.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.RecycleRequest;
 import my.edu.utar.RecycleGO.database.UserRecord;
+import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class PickUpActivity extends Fragment {
 
     private TextInputEditText etCategory, etDate, etContact, etRemarks;
-    private com.google.android.material.card.MaterialCardView cardPhoto;
     private ImageButton btnPhoto;
     private Button btnSubmit;
 
@@ -33,35 +43,90 @@ public class PickUpActivity extends Fragment {
     private String selectedCenterId = null;
     private String selectedCenterName = null;
     private FirestoreManager firestoreManager;
+    private RecycleRequest editRequest = null;
+    private boolean isEditMode = false;
+    
+    private Uri cameraImageUri;
+    private Uri selectedImageUri;
+    private String savedImageFileName = null;
 
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
                 if (uri != null) {
-                    btnPhoto.setImageURI(uri);
-                    btnPhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    selectedImageUri = uri;
+                    if (isAdded() && btnPhoto != null) {
+                        com.bumptech.glide.Glide.with(this)
+                                .load(uri)
+                                .centerCrop()
+                                .into(btnPhoto);
+                    }
                 }
             }
     );
 
-    private final ActivityResultLauncher<Void> takePicture = registerForActivityResult(
-            new ActivityResultContracts.TakePicturePreview(),
-            bitmap -> {
-                if (bitmap != null) {
-                    btnPhoto.setImageBitmap(bitmap);
-                    btnPhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
+    private final ActivityResultLauncher<Uri> takePicture = registerForActivityResult(
+            new ActivityResultContracts.TakePicture(),
+            success -> {
+                if (success && cameraImageUri != null) {
+                    selectedImageUri = cameraImageUri;
+                    if (isAdded() && btnPhoto != null) {
+                        com.bumptech.glide.Glide.with(this)
+                                .load(cameraImageUri)
+                                .centerCrop()
+                                .into(btnPhoto);
+                    }
+                } else {
+                    if (isAdded()) Toast.makeText(getContext(), "Camera cancelled or failed", Toast.LENGTH_SHORT).show();
                 }
             }
     );
+
+    private final ActivityResultLauncher<String> requestCameraPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    launchCamera();
+                } else {
+                    if (isAdded()) Toast.makeText(getContext(), "Camera permission required", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+
+    private void launchCamera() {
+        try {
+            File photoFile = createImageFile();
+            if (photoFile == null) {
+                if (isAdded()) Toast.makeText(getContext(), "Failed to create storage for photo", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            cameraImageUri = FileProvider.getUriForFile(requireContext(), 
+                    requireContext().getPackageName() + ".fileprovider", photoFile);
+            takePicture.launch(cameraImageUri);
+        } catch (Exception e) {
+            Log.e("PickUpActivity", "Error launching camera", e);
+            if (isAdded()) Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         firestoreManager = new FirestoreManager();
+        
+        if (savedInstanceState != null) {
+            cameraImageUri = savedInstanceState.getParcelable("cameraImageUri");
+            selectedImageUri = savedInstanceState.getParcelable("selectedImageUri");
+        }
+
         if (getArguments() != null) {
             flow = getArguments().getString("flow", "STATUS_TO_FORM");
             selectedCenterId = getArguments().getString("centerId");
             selectedCenterName = getArguments().getString("centerName");
+            if (getArguments().containsKey("edit_request")) {
+                editRequest = (RecycleRequest) getArguments().getSerializable("edit_request");
+                isEditMode = (editRequest != null);
+            }
         }
     }
 
@@ -73,6 +138,7 @@ public class PickUpActivity extends Fragment {
         args.putString("date", draft.getDate());
         args.putString("contact", draft.getContact());
         args.putString("remarks", draft.getRemarks());
+        args.putString("userId", draft.getUserId());
         nextFragment.setArguments(args);
 
         getParentFragmentManager().beginTransaction()
@@ -81,45 +147,39 @@ public class PickUpActivity extends Fragment {
                 .commit();
     }
 
-    // ==================== 新增：计算积分的方法 ====================
     private int calculatePoints(String category, double estimatedWeight) {
-        // 根据回收类型和重量计算积分
         int basePoints = 0;
-
-        if (category.contains("Plastic")) {
-            basePoints = 10;
-        } else if (category.contains("Metal")) {
-            basePoints = 15;
-        } else if (category.contains("Paper")) {
-            basePoints = 5;
-        } else if (category.contains("Glass")) {
-            basePoints = 8;
-        }
-
-        // 每公斤额外加分
+        if (category.contains("Plastic")) basePoints = 10;
+        else if (category.contains("Metal")) basePoints = 15;
+        else if (category.contains("Paper")) basePoints = 5;
+        else if (category.contains("Glass")) basePoints = 8;
         int weightPoints = (int) (estimatedWeight * 5);
-
         return basePoints + weightPoints;
     }
 
     private void submitToFirestore(RecycleRequest request) {
-        // 先提交回收请求
+        request.setStatus("Requesting");
+
+        if (selectedImageUri != null) {
+            savedImageFileName = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
+            request.setPhotoUrl(savedImageFileName);
+        }
+
         firestoreManager.submitRequest(request, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                // 回收请求提交成功后，增加用户积分
-                addPointsForRecycle(request);
+                if (isAdded()) addPointsForRecycle(request);
             }
 
             @Override
             public void onFailure(String error) {
-                Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+                if (isAdded()) Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void addPointsForRecycle(RecycleRequest request) {
-        // 获取当前用户ID
+        if (!isAdded()) return;
         android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
         String currentUid = prefs.getString("loggedInUid", "");
 
@@ -128,21 +188,19 @@ public class PickUpActivity extends Fragment {
             return;
         }
 
-        // 计算积分（这里重量默认2kg，您可以根据实际情况调整）
-        double estimatedWeight = 2.0; // 默认重量，可以从输入框获取
+        double estimatedWeight = 2.0; 
         int earnedPoints = calculatePoints(request.getCategory(), estimatedWeight);
 
-        // 增加积分
         firestoreManager.addPoints(currentUid, earnedPoints, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
+                if (!isAdded()) return;
                 Toast.makeText(getContext(), "Request Submitted! +" + earnedPoints + " points!", Toast.LENGTH_LONG).show();
 
-                // 同时更新 totalRecycled 计数
                 firestoreManager.getUser(currentUid, new FirestoreManager.OnUserFetchListener() {
                     @Override
                     public void onUserFetched(UserRecord user) {
-                        if (user != null) {
+                        if (user != null && isAdded()) {
                             int newTotal = user.getTotalRecycled() + 1;
                             java.util.Map<String, Object> updates = new java.util.HashMap<>();
                             updates.put("totalRecycled", newTotal);
@@ -151,12 +209,9 @@ public class PickUpActivity extends Fragment {
                     }
 
                     @Override
-                    public void onFailure(String error) {
-                        // 忽略错误，积分已经增加成功
-                    }
+                    public void onFailure(String error) {}
                 });
 
-                // 跳转到 RecycleStatus 页面
                 getParentFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, new RecycleStatus())
                         .commit();
@@ -164,8 +219,8 @@ public class PickUpActivity extends Fragment {
 
             @Override
             public void onFailure(String error) {
+                if (!isAdded()) return;
                 Toast.makeText(getContext(), "Points update failed: " + error, Toast.LENGTH_SHORT).show();
-                // 即使积分更新失败，也跳转到状态页面
                 getParentFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, new RecycleStatus())
                         .commit();
@@ -181,7 +236,6 @@ public class PickUpActivity extends Fragment {
 
         View view = inflater.inflate(R.layout.activity_pick_up, container, false);
 
-        cardPhoto = view.findViewById(R.id.cardPhoto);
         btnPhoto = view.findViewById(R.id.btnPhoto);
         etCategory = view.findViewById(R.id.etCategory);
         etDate = view.findViewById(R.id.etDate);
@@ -189,13 +243,38 @@ public class PickUpActivity extends Fragment {
         etRemarks = view.findViewById(R.id.etRemarks);
         btnSubmit = view.findViewById(R.id.btnSubmit);
 
+        if (selectedImageUri != null) {
+            com.bumptech.glide.Glide.with(this).load(selectedImageUri).centerCrop().into(btnPhoto);
+        } else if (isEditMode && editRequest.getPhotoUrl() != null) {
+            File file = new File(requireContext().getFilesDir(), editRequest.getPhotoUrl());
+            if (file.exists()) {
+                com.bumptech.glide.Glide.with(this).load(file).centerCrop().into(btnPhoto);
+            }
+        }
+
+        if (isEditMode) {
+            etCategory.setText(editRequest.getCategory());
+            etDate.setText(editRequest.getDate());
+            etContact.setText(editRequest.getContact());
+            etRemarks.setText(editRequest.getRemarks());
+            btnSubmit.setText("Update Request");
+        }
+
         btnPhoto.setOnClickListener(v -> {
             String[] options = {"Take Photo", "Choose from Gallery"};
             new AlertDialog.Builder(requireContext())
                     .setTitle("Select Option")
                     .setItems(options, (dialog, which) -> {
-                        if (which == 0) takePicture.launch(null);
-                        else getContent.launch("image/*");
+                        if (which == 0) {
+                            if (androidx.core.content.ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.CAMERA) 
+                                    == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                launchCamera();
+                            } else {
+                                requestCameraPermission.launch(android.Manifest.permission.CAMERA);
+                            }
+                        } else {
+                            getContent.launch("image/*");
+                        }
                     }).show();
         });
 
@@ -253,7 +332,36 @@ public class PickUpActivity extends Fragment {
                     category, date, contact, remarks
             );
 
-            if (flow.equals("MAP_TO_FORM")) {
+            if (selectedImageUri != null) {
+                savedImageFileName = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
+                request.setPhotoUrl(savedImageFileName);
+            }
+
+            if (isEditMode) {
+                editRequest.setCategory(category);
+                editRequest.setDate(date);
+                editRequest.setContact(contact);
+                editRequest.setRemarks(remarks);
+                if (selectedImageUri != null) {
+                    savedImageFileName = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
+                    editRequest.setPhotoUrl(savedImageFileName);
+                }
+                firestoreManager.updateRecycleRequest(editRequest, new FirestoreManager.OnTaskCompleteListener() {
+                    @Override
+                    public void onSuccess() {
+                        if (isAdded()) {
+                            Toast.makeText(getContext(), "Request Updated!", Toast.LENGTH_SHORT).show();
+                            getParentFragmentManager().beginTransaction()
+                                    .replace(R.id.fragment_container, new RecycleStatus())
+                                    .commit();
+                        }
+                    }
+                    @Override
+                    public void onFailure(String error) {
+                        if (isAdded()) Toast.makeText(getContext(), "Update failed: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else if (flow.equals("MAP_TO_FORM")) {
                 request.setCenterId(selectedCenterId);
                 request.setCenterName(selectedCenterName);
                 submitToFirestore(request);
@@ -263,5 +371,27 @@ public class PickUpActivity extends Fragment {
         });
 
         return view;
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (cameraImageUri != null) {
+            outState.putParcelable("cameraImageUri", cameraImageUri);
+        }
+        if (selectedImageUri != null) {
+            outState.putParcelable("selectedImageUri", selectedImageUri);
+        }
+    }
+
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        if (storageDir == null) return null;
+        if (!storageDir.exists()) {
+            storageDir.mkdirs();
+        }
+        return File.createTempFile(imageFileName, ".jpg", storageDir);
     }
 }

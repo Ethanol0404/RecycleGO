@@ -1,5 +1,7 @@
 package my.edu.utar.RecycleGO;
 
+import static android.app.Activity.RESULT_OK;
+
 import android.Manifest;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
@@ -51,8 +53,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
-import static android.app.Activity.RESULT_OK;
 
 public class AIAssistant extends BottomSheetDialogFragment {
 
@@ -401,8 +401,8 @@ public class AIAssistant extends BottomSheetDialogFragment {
         String[] options = {"Take Photo", "Choose from Gallery"};
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Select Image Source");
-        builder.setItems(options, (dialog,操作) -> {
-            if (操作 == 0) checkPermissionAndLaunchCamera();
+        builder.setItems(options, (dialog, action) -> {
+            if (action == 0) checkPermissionAndLaunchCamera();
             else pickImageLauncher.launch("image/*");
         });
         builder.show();

@@ -2,7 +2,7 @@ package my.edu.utar.RecycleGO.database;
 
 import com.google.firebase.firestore.DocumentId;
 
-public class RecycleRequest {
+public class RecycleRequest implements java.io.Serializable {
     @DocumentId
     private String id;
     private String userId;
@@ -13,6 +13,7 @@ public class RecycleRequest {
     private String centerId;
     private String centerName;
     private String status; // "Requesting", "Accepted", "Completed"
+    private String photoUrl; // Added for storing image reference
 
     public RecycleRequest() {
         // Required for Firestore
@@ -54,4 +55,7 @@ public class RecycleRequest {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getPhotoUrl() { return photoUrl; }
+    public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
 }

@@ -28,6 +28,7 @@ public class SignUpActivity extends AppCompatActivity {
     Button btnSignUp;
     TextView tvSignIn;
     FirestoreManager firestoreManager;
+    String selectedCenterId = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +73,15 @@ public class SignUpActivity extends AppCompatActivity {
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        etRecycleCenter.setFocusable(false);
+        etRecycleCenter.setClickable(true);
+        etRecycleCenter.setOnClickListener(v -> {
+            Intent intent = new Intent(SignUpActivity.this, FrameActivity.class);
+            intent.putExtra("targetFragment", "MAP");
+            intent.putExtra("flow", "SIGNUP_TO_MAP");
+            startActivityForResult(intent, 100);
         });
 
         // Sign In text listener
@@ -120,7 +130,10 @@ public class SignUpActivity extends AppCompatActivity {
                             String uid = UUID.randomUUID().toString();
                             UserRecord newUser = new UserRecord(uid, username, email, password, role);
                             if (role.equals("Admin")) {
-                                newUser.setRecycleCenter(recycleCenter);
+                                if (!selectedCenterId.isEmpty()) {
+                                    newUser.getJoinedCenters().add(selectedCenterId);
+                                }
+                                newUser.setRecycleCenter(recycleCenter); // Keep name for display
                             }
 
                             firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
@@ -148,4 +161,16 @@ public class SignUpActivity extends AppCompatActivity {
 
         findViewById(R.id.btnClose).setOnClickListener(v -> finish());
     }
-}
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
+            String selectedCenter = data.getStringExtra("selectedCenter");
+            selectedCenterId = data.getStringExtra("selectedCenterId");
+            if (selectedCenter != null) {
+                etRecycleCenter.setText(selectedCenter);
+            }
+        }
+    }
+}

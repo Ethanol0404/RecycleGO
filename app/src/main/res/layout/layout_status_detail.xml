@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/search_bg">
+
+    <TextView
+        android:id="@+id/detail_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Request Details"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#1A2A4E"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:id="@+id/detail_category"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/detail_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/detail_center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/detail_remarks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:id="@+id/detail_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:background="@drawable/search_bg"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="24dp"/>
+
+    <GridLayout
+        android:id="@+id/layout_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:alignmentMode="alignMargins"
+        android:columnOrderPreserved="false">
+
+        <Button
+            android:id="@+id/btn_action_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Edit"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_action_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_action_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Message"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_action_accept"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Accept"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_action_confirm_pickup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Confirm Pickup"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_action_confirm_complete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Confirm Complete"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_action_report"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Report"
+            android:visibility="gone"/>
+    </GridLayout>
+
+</LinearLayout>

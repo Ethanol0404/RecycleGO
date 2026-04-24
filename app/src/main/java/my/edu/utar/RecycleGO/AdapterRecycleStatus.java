@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -12,8 +13,6 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
-
-import android.widget.Button;
 
 import my.edu.utar.RecycleGO.database.RecycleRequest;
 
@@ -24,11 +23,17 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
     public interface OnStatusActionListener {
         void onAccept(RecycleRequest request);
         void onComplete(RecycleRequest request);
+        void onItemClick(RecycleRequest request);
     }
 
     public AdapterRecycleStatus(List<RecycleRequest> list, OnStatusActionListener actionListener) { 
         this.list = list; 
         this.actionListener = actionListener;
+    }
+
+    public void updateList(List<RecycleRequest> newList) {
+        this.list = newList;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -41,10 +46,14 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RecycleRequest request = list.get(position);
-        holder.tvId.setText("ID: " + (request.getId() != null ? request.getId().substring(0, 8) : "N/A"));
+        holder.tvId.setText("ID: " + (request.getId() != null && request.getId().length() > 8 ? request.getId().substring(0, 8) : "N/A"));
         holder.tvItem.setText(request.getCategory());
         holder.tvDate.setText(request.getDate());
         holder.tvStatus.setText(request.getStatus());
+        
+        holder.itemView.setOnClickListener(v -> {
+            if (actionListener != null) actionListener.onItemClick(request);
+        });
         
         // Center info
         if (request.getCenterName() != null) {
@@ -54,7 +63,7 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
             holder.tvCenter.setVisibility(View.GONE);
         }
 
-        // Color & Button Logic
+        // Hide simulation buttons to focus interaction on the detail pop-up as requested
         holder.btnAccept.setVisibility(View.GONE);
         holder.btnCompleted.setVisibility(View.GONE);
 
@@ -62,11 +71,9 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
             switch (request.getStatus()) {
                 case "Requesting":
                     holder.card.setCardBackgroundColor(Color.parseColor("#E0E0E0"));
-                    holder.btnAccept.setVisibility(View.VISIBLE);
                     break;
                 case "Accepted":
                     holder.card.setCardBackgroundColor(Color.parseColor("#A7FFEB"));
-                    holder.btnCompleted.setVisibility(View.VISIBLE);
                     break;
                 case "Completed":
                     holder.card.setCardBackgroundColor(Color.parseColor("#FFF176"));

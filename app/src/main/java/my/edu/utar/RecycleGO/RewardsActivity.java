@@ -28,17 +28,17 @@ public class RewardsActivity extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // 加载布局
+        // Load layout
         View view = inflater.inflate(R.layout.activity_reward, container, false);
 
-        // 初始化视图
+        // Initialize views
         txtPoints = view.findViewById(R.id.txt_points);
         txtUserName = view.findViewById(R.id.txt_user_name);
         txtEmail = view.findViewById(R.id.txt_email);
         txtTotalRecycled = view.findViewById(R.id.txt_total_recycled);
         txtTotalPoints = view.findViewById(R.id.txt_total_points);
 
-        // 初始化 FirestoreManager 和 Firebase Auth
+        // Initialize Managers
         firestoreManager = new FirestoreManager();
         auth = FirebaseAuth.getInstance();
 
@@ -52,11 +52,11 @@ public class RewardsActivity extends Fragment {
     }
 
     private void loadUserData() {
-        // 获取当前登录用户
+        // Get current user
         FirebaseUser user = auth.getCurrentUser();
 
         if (user == null) {
-            // 未登录状态
+            // Not logged in
             txtUserName.setText("Guest User");
             txtPoints.setText("0 pts");
             txtEmail.setText("Not logged in");
@@ -67,12 +67,12 @@ public class RewardsActivity extends Fragment {
 
         currentUserId = user.getUid();
 
-        // 从 Firestore 获取用户数据
+        // Fetch user data from Firestore
         firestoreManager.getUser(currentUserId, new FirestoreManager.OnUserFetchListener() {
             @Override
             public void onUserFetched(UserRecord userRecord) {
                 if (userRecord != null) {
-                    // 用户存在，显示数据
+                    // User exists, show data
                     String userName = userRecord.getUsername();
                     String email = userRecord.getEmail();
                     int points = userRecord.getPoints();
@@ -85,14 +85,14 @@ public class RewardsActivity extends Fragment {
                     txtTotalPoints.setText(points + " pts");
 
                 } else {
-                    // 新用户，创建默认数据
+                    // New user, create default entry
                     createNewUser();
                 }
             }
 
             @Override
             public void onFailure(String error) {
-                Toast.makeText(getContext(), "加载失败: " + error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Load failed: " + error, Toast.LENGTH_SHORT).show();
                 setDefaultValues();
             }
         });
@@ -127,7 +127,7 @@ public class RewardsActivity extends Fragment {
 
             @Override
             public void onFailure(String error) {
-                Toast.makeText(getContext(), "创建用户失败: " + error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Create user failed: " + error, Toast.LENGTH_SHORT).show();
                 setDefaultValues();
             }
         });

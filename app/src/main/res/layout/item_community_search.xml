@@ -14,13 +14,13 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <de.hdodenhof.circleimageview.CircleImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/community_icon"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:src="@drawable/profile_circle"
-            app:civ_border_color="#2D6A4F"
-            app:civ_border_width="1dp"/>
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/CircleAppearance"/>
 
         <TextView
             android:id="@+id/community_name"

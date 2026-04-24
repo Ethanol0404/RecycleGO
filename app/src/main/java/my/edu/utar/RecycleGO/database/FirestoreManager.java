@@ -45,6 +45,12 @@ public class FirestoreManager {
         return db.collection(COLLECTION_CENTERS);
     }
 
+    public void addRecycleCenter(RecycleCenter center, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_CENTERS).add(center)
+                .addOnSuccessListener(documentReference -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     // ==================== Requests ====================
     public CollectionReference getRequestsCollection() {
         return db.collection(COLLECTION_REQUESTS);
@@ -56,6 +62,16 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
+    public void updateRecycleRequest(RecycleRequest request, OnTaskCompleteListener listener) {
+        if (request.getId() == null) {
+            listener.onFailure("Request ID is missing.");
+            return;
+        }
+        db.collection(COLLECTION_REQUESTS).document(request.getId()).set(request)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     public void updateRequestStatus(String requestId, String newStatus, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_REQUESTS).document(requestId)
                 .update("status", newStatus)
@@ -63,9 +79,25 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
+    public void deleteRecycleRequest(String requestId, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_REQUESTS).document(requestId).delete()
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     public Query getRequestsByUser(String userId) {
         return db.collection(COLLECTION_REQUESTS)
                 .whereEqualTo("userId", userId)
+                .orderBy("date", Query.Direction.DESCENDING);
+    }
+
+    public Query getRequestsByCenters(List<String> centerIds) {
+        if (centerIds == null || centerIds.isEmpty()) {
+            // Return a query that will be empty but valid
+            return db.collection(COLLECTION_REQUESTS).whereEqualTo("centerId", "NON_EXISTENT");
+        }
+        return db.collection(COLLECTION_REQUESTS)
+                .whereIn("centerId", centerIds)
                 .orderBy("date", Query.Direction.DESCENDING);
     }
 
@@ -113,11 +145,14 @@ public class FirestoreManager {
     }
 
     public void saveUser(UserRecord user, OnTaskCompleteListener listener) {
-        if (!"Admin".equals(user.getRole())) {
-            user.setRecycleCenter(null);
-        }
-
         db.collection(COLLECTION_USERS).document(user.getUid()).set(user)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void joinRecycleCenter(String uid, String centerId, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_USERS).document(uid)
+                .update("joinedCenters", FieldValue.arrayUnion(centerId))
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
@@ -128,7 +163,7 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
-    // ==================== 积分相关的新方法 ====================
+    // ==================== Points Methods ====================
     public void updateUserPoints(String uid, int newPoints, OnTaskCompleteListener listener) {
         java.util.Map<String, Object> updates = new java.util.HashMap<>();
         updates.put("points", newPoints);
@@ -163,6 +198,16 @@ public class FirestoreManager {
         db.collection(COLLECTION_COMMUNITIES).get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     listener.onListFetched(queryDocumentSnapshots.toObjects(CommunityModel.class));
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void addCommunity(CommunityModel community, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_COMMUNITIES).add(community)
+                .addOnSuccessListener(documentReference -> {
+                    String id = documentReference.getId();
+                    documentReference.update("communityID", id);
+                    listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
