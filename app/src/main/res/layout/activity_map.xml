@@ -53,6 +53,18 @@
         android:paddingEnd="16dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/map_btnConfirmSelection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/recycler_horizontal_list"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:src="@drawable/baseline_check_24"
+        android:visibility="gone"
+        app:backgroundTint="#2E6A5E"
+        app:tint="@android:color/white" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/map_btnAddCenter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

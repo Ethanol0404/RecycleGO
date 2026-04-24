@@ -56,12 +56,11 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
             if (actionListener != null) actionListener.onItemClick(request);
         });
         
-        // Center info
-        if (request.getCenterName() != null) {
-            holder.tvCenter.setText(request.getCenterName());
-            holder.tvCenter.setVisibility(View.VISIBLE);
+        // Image loading
+        if (request.getPhotoUrl() != null && !request.getPhotoUrl().isEmpty()) {
+            my.edu.utar.RecycleGO.utils.ImageManager.loadImage(holder.itemView.getContext(), request.getPhotoUrl(), holder.img);
         } else {
-            holder.tvCenter.setVisibility(View.GONE);
+            holder.img.setImageResource(R.drawable.request); // Fallback
         }
 
         // Hide simulation buttons to focus interaction on the detail pop-up as requested

@@ -60,7 +60,7 @@ public class Community extends Fragment {
             btnAddGroup.setVisibility(View.VISIBLE);
             btnAddGroup.setOnClickListener(v -> {
                 getParentFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new AddCommunityFragment())
+                        .replace(R.id.fragment_container, new CommunityAdminFragment())
                         .addToBackStack("ADD_COMMUNITY")
                         .commit();
             });

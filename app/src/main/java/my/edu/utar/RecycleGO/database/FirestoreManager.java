@@ -79,6 +79,19 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
+    public void acceptRequest(String requestId, String acceptingCenterId, String acceptingCenterName, OnTaskCompleteListener listener) {
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("status", "Accepted");
+        updates.put("centerId", acceptingCenterId);
+        updates.put("centerName", acceptingCenterName);
+        updates.put("targetCenterIds", java.util.Arrays.asList(acceptingCenterId));
+
+        db.collection(COLLECTION_REQUESTS).document(requestId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     public void deleteRecycleRequest(String requestId, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_REQUESTS).document(requestId).delete()
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
@@ -93,11 +106,11 @@ public class FirestoreManager {
 
     public Query getRequestsByCenters(List<String> centerIds) {
         if (centerIds == null || centerIds.isEmpty()) {
-            // Return a query that will be empty but valid
-            return db.collection(COLLECTION_REQUESTS).whereEqualTo("centerId", "NON_EXISTENT");
+            return db.collection(COLLECTION_REQUESTS).whereEqualTo("userId", "NON_EXISTENT");
         }
+        // Use whereArrayContainsAny to find requests where at least one of targetCenterIds matches Admin's centers
         return db.collection(COLLECTION_REQUESTS)
-                .whereIn("centerId", centerIds)
+                .whereArrayContainsAny("targetCenterIds", centerIds)
                 .orderBy("date", Query.Direction.DESCENDING);
     }
 
@@ -209,6 +222,22 @@ public class FirestoreManager {
                     documentReference.update("communityID", id);
                     listener.onSuccess();
                 })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void updateCommunity(CommunityModel community, OnTaskCompleteListener listener) {
+        if (community.getCommunityID() == null) {
+            listener.onFailure("Community ID is missing");
+            return;
+        }
+        db.collection(COLLECTION_COMMUNITIES).document(community.getCommunityID()).set(community)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void deleteCommunity(String communityID, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_COMMUNITIES).document(communityID).delete()
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 

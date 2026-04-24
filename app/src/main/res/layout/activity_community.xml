@@ -80,9 +80,9 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="88dp"
-        app:srcCompat="@android:drawable/ic_menu_add"
+        app:srcCompat="@drawable/outline_account_circle_24"
         app:backgroundTint="#4CAF50"
-        app:tint="@android:color/white"
+        app:tint="@color/white"
         android:layout_gravity="bottom|end"
         android:visibility="gone" />
 

@@ -4,13 +4,15 @@ public class CommunityModel {
     private String communityID;
     private String name;
     private String iconUrl;
+    private String creatorUid;
 
     public CommunityModel() {}
 
-    public CommunityModel(String communityID, String name, String iconUrl) {
+    public CommunityModel(String communityID, String name, String iconUrl, String creatorUid) {
         this.communityID = communityID;
         this.name = name;
         this.iconUrl = iconUrl;
+        this.creatorUid = creatorUid;
     }
 
     public String getCommunityID() { return communityID; }
@@ -21,4 +23,7 @@ public class CommunityModel {
 
     public String getIconUrl() { return iconUrl; }
     public void setIconUrl(String iconUrl) { this.iconUrl = iconUrl; }
+
+    public String getCreatorUid() { return creatorUid; }
+    public void setCreatorUid(String creatorUid) { this.creatorUid = creatorUid; }
 }

@@ -56,15 +56,7 @@ public class AdapterCommunityPost extends RecyclerView.Adapter<AdapterCommunityP
         // Handle Image
         if (post.getPhotoUrl() != null && !post.getPhotoUrl().isEmpty()) {
             holder.ivPostImage.setVisibility(View.VISIBLE);
-            File imgFile = ImageManager.getImageFile(holder.itemView.getContext(), post.getPhotoUrl());
-            if (imgFile != null && imgFile.exists()) {
-                Glide.with(holder.itemView.getContext())
-                        .load(imgFile)
-                        .into(holder.ivPostImage);
-            } else {
-                // For demo, if file not found locally, maybe show a placeholder
-                holder.ivPostImage.setVisibility(View.GONE);
-            }
+            ImageManager.loadImage(holder.itemView.getContext(), post.getPhotoUrl(), holder.ivPostImage);
         } else {
             holder.ivPostImage.setVisibility(View.GONE);
         }
