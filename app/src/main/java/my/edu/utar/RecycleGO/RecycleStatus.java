@@ -75,6 +75,8 @@ public class RecycleStatus extends Fragment {
             @Override
             public void onComplete(RecycleRequest request) { updateStatus(request.getId(), "Completed"); }
             @Override
+            public void onVerify(RecycleRequest request) { confirmComplete(request); }
+            @Override
             public void onItemClick(RecycleRequest request) { showDetailPopup(request); }
         });
         recyclerView.setAdapter(adapter);
@@ -267,7 +269,6 @@ public class RecycleStatus extends Fragment {
         } else if ("Completed".equalsIgnoreCase(s)) {
             btnMsg.setVisibility(View.VISIBLE);
             btnReport.setVisibility(View.VISIBLE);
-            if (!isAdmin) btnConfirmComplete.setVisibility(View.VISIBLE);
         }
 
         btnEdit.setOnClickListener(v -> {
@@ -286,7 +287,6 @@ public class RecycleStatus extends Fragment {
         btnAccept.setOnClickListener(v -> { updateStatus(request.getId(), "Accepted"); dialog.dismiss(); });
         btnConfirmPickup.setOnClickListener(v -> { updateStatus(request.getId(), "Completed"); dialog.dismiss(); });
         btnDelete.setOnClickListener(v -> { deleteRequest(request.getId()); dialog.dismiss(); });
-        btnConfirmComplete.setOnClickListener(v -> { confirmComplete(request); dialog.dismiss(); });
         
         btnMsg.setOnClickListener(v -> {
             Toast.makeText(getContext(), "Opening Messages...", Toast.LENGTH_SHORT).show();

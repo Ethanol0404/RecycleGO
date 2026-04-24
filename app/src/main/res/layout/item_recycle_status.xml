@@ -139,22 +139,24 @@
                     android:orientation="horizontal">
 
                     <Button
-                        android:id="@+id/btnSimulateAccept"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:backgroundTint="#4CAF50"
-                        android:text="Accept"
-                        android:textSize="10sp"
-                        android:visibility="gone" />
-
-                    <Button
-                        android:id="@+id/btnSimulateDone"
+                        android:id="@+id/btnConfirmComplete"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:layout_marginStart="8dp"
-                        android:backgroundTint="#2196F3"
-                        android:text="Done"
+                        android:backgroundTint="#FF9800"
+                        android:text="Confirm Complete"
                         android:textSize="10sp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvPointsEarned"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Earned: +50 pts"
+                        android:textColor="#4CAF50"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
                         android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>

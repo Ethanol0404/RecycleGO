@@ -23,6 +23,7 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
     public interface OnStatusActionListener {
         void onAccept(RecycleRequest request);
         void onComplete(RecycleRequest request);
+        void onVerify(RecycleRequest request);
         void onItemClick(RecycleRequest request);
     }
 
@@ -46,7 +47,7 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RecycleRequest request = list.get(position);
-        holder.tvId.setText("ID: " + (request.getId() != null && request.getId().length() > 8 ? request.getId().substring(0, 8) : "N/A"));
+        holder.tvId.setText( (request.getId() != null && request.getId().length() > 8 ? request.getId().substring(0, 8) : "N/A"));
         holder.tvItem.setText(request.getCategory());
         holder.tvDate.setText(request.getDate());
         holder.tvStatus.setText(request.getStatus());
@@ -64,8 +65,8 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
         }
 
         // Hide simulation buttons to focus interaction on the detail pop-up as requested
-        holder.btnAccept.setVisibility(View.GONE);
-        holder.btnCompleted.setVisibility(View.GONE);
+        holder.btnConfirmComplete.setVisibility(View.GONE);
+        holder.tvPointsEarned.setVisibility(View.GONE);
 
         if (request.getStatus() != null) {
             switch (request.getStatus()) {
@@ -77,6 +78,11 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
                     break;
                 case "Completed":
                     holder.card.setCardBackgroundColor(Color.parseColor("#FFF176"));
+                    holder.btnConfirmComplete.setVisibility(View.VISIBLE);
+                    break;
+                case "Verified":
+                    holder.card.setCardBackgroundColor(Color.parseColor("#FFF176"));
+                    holder.tvPointsEarned.setVisibility(View.VISIBLE);
                     break;
                 default:
                     holder.card.setCardBackgroundColor(Color.WHITE);
@@ -84,12 +90,8 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
             }
         }
 
-        holder.btnAccept.setOnClickListener(v -> {
-            if (actionListener != null) actionListener.onAccept(request);
-        });
-
-        holder.btnCompleted.setOnClickListener(v -> {
-            if (actionListener != null) actionListener.onComplete(request);
+        holder.btnConfirmComplete.setOnClickListener(v -> {
+            if (actionListener != null) actionListener.onVerify(request);
         });
     }
 
@@ -102,7 +104,8 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
         TextView tvId, tvItem, tvDate, tvStatus, tvCenter;
         ImageView img;
         CardView card;
-        Button btnAccept, btnCompleted;
+        Button btnConfirmComplete;
+        TextView tvPointsEarned;
         
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -113,8 +116,8 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
             tvCenter = itemView.findViewById(R.id.recycle_status_center);
             img = itemView.findViewById(R.id.recycle_status_image);
             card = itemView.findViewById(R.id.recycle_status_card);
-            btnAccept = itemView.findViewById(R.id.btnSimulateAccept);
-            btnCompleted = itemView.findViewById(R.id.btnSimulateDone);
+            btnConfirmComplete = itemView.findViewById(R.id.btnConfirmComplete);
+            tvPointsEarned = itemView.findViewById(R.id.tvPointsEarned);
         }
     }
 }
