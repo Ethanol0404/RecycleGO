@@ -102,7 +102,47 @@
                 </FrameLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Action Button 1 (Recycle Now) -->
+            <!-- Recycling Tip of the Day (REST API Demo) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tip of the Day"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/black" />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_tip_of_day"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:background="#FFFFFF">
+                    <TextView
+                        android:id="@+id/txt_tip_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Loading tips..."
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#2E6A5E" />
+                    <TextView
+                        android:id="@+id/txt_tip_body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Please wait while we fetch the latest recycling advice via REST API."
+                        android:textSize="14sp"
+                        android:textColor="#666666" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_recycle_now"
                 android:layout_width="match_parent"

@@ -5,17 +5,30 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.cardview.widget.CardView;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.util.List;
+import java.util.Random;
+
+import my.edu.utar.RecycleGO.utils.RecycleApiService;
+import my.edu.utar.RecycleGO.utils.RetrofitClient;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
 
-    TextView txtPoints;
+    TextView txtPoints, txtTipTitle, txtTipBody;
     CardView cardNews, cardRecycleNow, cardFindEvent, cardQuizPlastic, cardQuizFood;
     FloatingActionButton fabAiAssistant;
     ImageView imgPointsDropdown;
@@ -33,6 +46,8 @@ public class HomeFragment extends Fragment {
         cardQuizFood = view.findViewById(R.id.card_quiz_food);
         fabAiAssistant = view.findViewById(R.id.fab_ai_assistant);
         imgPointsDropdown = view.findViewById(R.id.img_points_dropdown);
+        txtTipTitle = view.findViewById(R.id.txt_tip_title);
+        txtTipBody = view.findViewById(R.id.txt_tip_body);
 
         // Load Points
         loadPoints();
@@ -128,9 +143,33 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    private void fetchRecyclingTip() {
+        RecycleApiService service = RetrofitClient.getClient().create(RecycleApiService.class);
+        service.getRecyclingTips().enqueue(new Callback<List<RecycleApiService.RecycleTip>>() {
+            @Override
+            public void onResponse(Call<List<RecycleApiService.RecycleTip>> call, Response<List<RecycleApiService.RecycleTip>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    List<RecycleApiService.RecycleTip> tips = response.body();
+
+                    Random random = new Random();
+                    RecycleApiService.RecycleTip tip = tips.get(random.nextInt(tips.size()));
+
+                    if (txtTipTitle != null) txtTipTitle.setText("Tip: " + tip.getTitle());
+                    if (txtTipBody != null) txtTipBody.setText(tip.getBody());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<RecycleApiService.RecycleTip>> call, Throwable t) {
+                if (txtTipTitle != null) txtTipTitle.setText("Unable to load tips");
+            }
+        });
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         loadPoints();
+        fetchRecyclingTip();
     }
 }
