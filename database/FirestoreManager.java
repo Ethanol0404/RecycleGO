@@ -1,14 +1,12 @@
 package my.edu.utar.RecycleGO.database;
 
 import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.ListenerRegistration;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +110,7 @@ public class FirestoreManager {
 
     public Query getRequestsByCenters(List<String> centerIds) {
         if (centerIds == null || centerIds.isEmpty()) {
+            // Return a query that will be empty but valid
             return db.collection(COLLECTION_REQUESTS).whereEqualTo("centerId", "NON_EXISTENT");
         }
         return db.collection(COLLECTION_REQUESTS)
@@ -207,6 +206,15 @@ public class FirestoreManager {
     }
 
     // ==================== Points Methods ====================
+    public void updateUserPoints(String uid, int newPoints, OnTaskCompleteListener listener) {
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("points", newPoints);
+
+        db.collection(COLLECTION_USERS).document(uid).update(updates)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     public void addPoints(String uid, int pointsToAdd, String activityType, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_USERS).document(uid)
                 .update("points", FieldValue.increment(pointsToAdd))
@@ -218,53 +226,46 @@ public class FirestoreManager {
                 });
     }
 
-    public void getPointHistory(String uid, OnPointsHistoryFetchListener listener) {
-        db.collection(COLLECTION_POINT_RECORDS).document(uid).get()
-                .addOnSuccessListener(doc -> {
-                    if (doc.exists()) {
-                        listener.onHistoryFetched(
-                                (List<String>) doc.get("activity"),
-                                (List<Long>) doc.get("point"),
-                                (List<Timestamp>) doc.get("timestamp")
-                        );
+    public void getUserPoints(String uid, OnPointsFetchListener listener) {
+        db.collection(COLLECTION_USERS).document(uid).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Long points = documentSnapshot.getLong("points");
+                        listener.onPointsFetched(points != null ? points.intValue() : 0);
                     } else {
-                        listener.onHistoryFetched(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+                        listener.onPointsFetched(0);
                     }
                 })
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
+    // ==================== Point Records ====================
     private void addPointRecord(String userId, int points, String activityType, OnTaskCompleteListener listener) {
-        DocumentReference ref = db.collection(COLLECTION_POINT_RECORDS).document(userId);
-        db.runTransaction(transaction -> {
-            com.google.firebase.firestore.DocumentSnapshot doc = transaction.get(ref);
-            List<String> activities = new ArrayList<>();
-            List<Long> pts = new ArrayList<>();
-            List<Timestamp> timestamps = new ArrayList<>();
-
-            if (doc.exists()) {
-                if (doc.get("activity") != null) activities = (List<String>) doc.get("activity");
-                if (doc.get("point") != null) pts = (List<Long>) doc.get("point");
-                if (doc.get("timestamp") != null) timestamps = (List<Timestamp>) doc.get("timestamp");
-            }
-
-            activities.add(activityType);
-            pts.add((long) points);
-            timestamps.add(Timestamp.now());
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("uid", userId);
-            data.put("activity", activities);
-            data.put("point", pts);
-            data.put("timestamp", timestamps);
-
-            transaction.set(ref, data);
-            return null;
-        }).addOnSuccessListener(aVoid -> {
-            if (listener != null) listener.onSuccess();
-        }).addOnFailureListener(e -> {
-            if (listener != null) listener.onFailure(e.getMessage());
-        });
+        db.collection(COLLECTION_POINT_RECORDS).document(userId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("activity", FieldValue.arrayUnion(activityType));
+                    updates.put("point", FieldValue.arrayUnion(points));
+                    
+                    if (documentSnapshot.exists()) {
+                        db.collection(COLLECTION_POINT_RECORDS).document(userId).update(updates)
+                                .addOnSuccessListener(aVoid -> {
+                                    if (listener != null) listener.onSuccess();
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (listener != null) listener.onFailure(e.getMessage());
+                                });
+                    } else {
+                        updates.put("uid", userId);
+                        db.collection(COLLECTION_POINT_RECORDS).document(userId).set(updates)
+                                .addOnSuccessListener(aVoid -> {
+                                    if (listener != null) listener.onSuccess();
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (listener != null) listener.onFailure(e.getMessage());
+                                });
+                    }
+                });
     }
 
     public void saveQuizRecord(String userId, int points, OnTaskCompleteListener listener) {
@@ -386,8 +387,8 @@ public class FirestoreManager {
         void onFailure(String error);
     }
 
-    public interface OnPointsHistoryFetchListener {
-        void onHistoryFetched(List<String> activities, List<Long> points, List<Timestamp> timestamps);
+    public interface OnPointsFetchListener {
+        void onPointsFetched(int points);
         void onFailure(String error);
     }
 }

@@ -138,7 +138,7 @@ public class Map extends Fragment {
                              Bundle savedInstanceState) {
 
         if (getActivity() instanceof FrameActivity) {
-            ((FrameActivity) getActivity()).setHeaderVisible(false);
+            ((FrameActivity) getActivity()).setHeaderVisible(true);
         }
 
         View view = inflater.inflate(R.layout.activity_map, container, false);

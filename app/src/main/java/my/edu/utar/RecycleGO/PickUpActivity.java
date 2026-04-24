@@ -191,7 +191,7 @@ public class PickUpActivity extends Fragment {
         double estimatedWeight = 2.0; 
         int earnedPoints = calculatePoints(request.getCategory(), estimatedWeight);
 
-        firestoreManager.addPoints(currentUid, earnedPoints, new FirestoreManager.OnTaskCompleteListener() {
+        firestoreManager.addPoints(currentUid, earnedPoints, "Recycle", new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
                 if (!isAdded()) return;

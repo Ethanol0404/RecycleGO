@@ -306,7 +306,7 @@ public class RecycleStatus extends Fragment {
 
     private void confirmComplete(RecycleRequest request) {
         updateStatus(request.getId(), "Verified");
-        firestoreManager.addPoints(userId, 50, new FirestoreManager.OnTaskCompleteListener() {
+        firestoreManager.addPoints(userId, 50, "Verified Recycle", new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
                 if (isAdded()) Toast.makeText(getContext(), "Points earned! +50", Toast.LENGTH_LONG).show();

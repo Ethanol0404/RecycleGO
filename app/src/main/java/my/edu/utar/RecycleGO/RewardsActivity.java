@@ -1,143 +1,230 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.utils.ColorTemplate;
+import com.google.firebase.firestore.ListenerRegistration;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.RecycleRequest;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class RewardsActivity extends Fragment {
 
-    private TextView txtPoints, txtUserName, txtEmail, txtTotalRecycled, txtTotalPoints;
+    private TextView txtPoints, txtUserName, txtTreesSaved, txtUserLevel;
+    private PieChart pieChart;
+    private Button btnHistory;
+    
+    // Ranking views
+    private TextView txtRank1Name, txtRank1Points;
+    private TextView txtRank2Name, txtRank2Points;
+    private TextView txtRank3Name, txtRank3Points;
+    private TextView txtCurrentUserPoints, txtCurrentUserNameRank, txtCurrentRank;
+
     private FirestoreManager firestoreManager;
-    private FirebaseAuth auth;
     private String currentUserId;
+    private ListenerRegistration userListener;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // Load layout
+        if (getActivity() instanceof FrameActivity) {
+            ((FrameActivity) getActivity()).setHeaderVisible(true);
+        }
+
         View view = inflater.inflate(R.layout.activity_reward, container, false);
 
         // Initialize views
         txtPoints = view.findViewById(R.id.txt_points);
         txtUserName = view.findViewById(R.id.txt_user_name);
-        txtEmail = view.findViewById(R.id.txt_email);
-        txtTotalRecycled = view.findViewById(R.id.txt_total_recycled);
-        txtTotalPoints = view.findViewById(R.id.txt_total_points);
+        txtUserLevel = view.findViewById(R.id.txt_user_level);
+        txtTreesSaved = view.findViewById(R.id.txt_trees_saved);
+        pieChart = view.findViewById(R.id.pieChart);
+        btnHistory = view.findViewById(R.id.btn_history);
 
-        // Initialize Managers
+        txtRank1Name = view.findViewById(R.id.txt_rank1_name);
+        txtRank1Points = view.findViewById(R.id.txt_rank1_points);
+        txtRank2Name = view.findViewById(R.id.txt_rank2_name);
+        txtRank2Points = view.findViewById(R.id.txt_rank2_points);
+        txtRank3Name = view.findViewById(R.id.txt_rank3_name);
+        txtRank3Points = view.findViewById(R.id.txt_rank3_points);
+
+        txtCurrentUserPoints = view.findViewById(R.id.txt_current_user_points);
+        txtCurrentUserNameRank = view.findViewById(R.id.txt_current_user_name_rank);
+        txtCurrentRank = view.findViewById(R.id.txt_current_rank);
+
         firestoreManager = new FirestoreManager();
-        auth = FirebaseAuth.getInstance();
+        
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("loggedInUid", "");
+
+        if (btnHistory != null) {
+            btnHistory.setOnClickListener(v -> {
+                getParentFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new ActivityFragment())
+                        .addToBackStack(null)
+                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                        .commit();
+            });
+        }
+
+        setupPieChart();
 
         return view;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        loadUserData();
+    private void setupPieChart() {
+        pieChart.setUsePercentValues(true);
+        pieChart.getDescription().setEnabled(false);
+        pieChart.setExtraOffsets(5, 10, 5, 5);
+        pieChart.setDragDecelerationFrictionCoef(0.95f);
+        pieChart.setDrawHoleEnabled(true);
+        pieChart.setHoleColor(Color.WHITE);
+        pieChart.setTransparentCircleRadius(61f);
+        pieChart.setEntryLabelColor(Color.BLACK);
+        pieChart.setEntryLabelTextSize(12f);
     }
 
-    private void loadUserData() {
-        // Get current user
-        FirebaseUser user = auth.getCurrentUser();
+    @Override
+    public void onStart() {
+        super.onStart();
+        loadData();
+    }
 
-        if (user == null) {
-            // Not logged in
-            txtUserName.setText("Guest User");
-            txtPoints.setText("0 pts");
-            txtEmail.setText("Not logged in");
-            txtTotalRecycled.setText("0 times");
-            txtTotalPoints.setText("0 pts");
-            return;
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (userListener != null) {
+            userListener.remove();
         }
+    }
 
-        currentUserId = user.getUid();
+    private void loadData() {
+        if (currentUserId == null || currentUserId.isEmpty()) return;
 
-        // Fetch user data from Firestore
-        firestoreManager.getUser(currentUserId, new FirestoreManager.OnUserFetchListener() {
+        if (userListener != null) userListener.remove();
+        userListener = firestoreManager.listenToUser(currentUserId, new FirestoreManager.OnUserFetchListener() {
             @Override
             public void onUserFetched(UserRecord userRecord) {
-                if (userRecord != null) {
-                    // User exists, show data
-                    String userName = userRecord.getUsername();
-                    String email = userRecord.getEmail();
-                    int points = userRecord.getPoints();
-                    int totalRecycled = userRecord.getTotalRecycled();
-
-                    txtUserName.setText(userName != null ? userName : "Recycler");
-                    txtEmail.setText(email != null ? email : "");
-                    txtPoints.setText(points + " pts");
-                    txtTotalRecycled.setText(totalRecycled + " times");
-                    txtTotalPoints.setText(points + " pts");
-
-                } else {
-                    // New user, create default entry
-                    createNewUser();
+                if (userRecord != null && isAdded()) {
+                    txtUserName.setText(userRecord.getUsername());
+                    txtPoints.setText(String.valueOf(userRecord.getPoints()));
+                    txtCurrentUserNameRank.setText(userRecord.getUsername());
+                    txtCurrentUserPoints.setText(String.valueOf(userRecord.getPoints()));
+                    
+                    if (userRecord.getPoints() > 5000) txtUserLevel.setText("GOLD");
+                    else if (userRecord.getPoints() > 2000) txtUserLevel.setText("SILVER");
+                    else txtUserLevel.setText("BRONZE");
                 }
             }
-
             @Override
-            public void onFailure(String error) {
-                Toast.makeText(getContext(), "Load failed: " + error, Toast.LENGTH_SHORT).show();
-                setDefaultValues();
+            public void onFailure(String error) {}
+        });
+
+        firestoreManager.getCompletedRequestsByUser(currentUserId, new FirestoreManager.OnListFetchListener<RecycleRequest>() {
+            @Override
+            public void onListFetched(List<RecycleRequest> list) {
+                if (isAdded()) updatePieChartAndTrees(list);
             }
+            @Override
+            public void onFailure(String error) {}
+        });
+
+        firestoreManager.getAllUsers(new FirestoreManager.OnListFetchListener<UserRecord>() {
+            @Override
+            public void onListFetched(List<UserRecord> list) {
+                if (isAdded()) updateRanking(list);
+            }
+            @Override
+            public void onFailure(String error) {}
         });
     }
 
-    private void createNewUser() {
-        FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser == null) return;
+    private void updatePieChartAndTrees(List<RecycleRequest> list) {
+        Map<String, Integer> categoryCount = new HashMap<>();
+        int totalTrees = 0;
 
-        String email = currentUser.getEmail();
-        String username = email != null ? email.split("@")[0] : "Recycler";
+        for (RecycleRequest req : list) {
+            String fullCat = req.getCategory();
+            if (fullCat == null) continue;
 
-        UserRecord newUser = new UserRecord(
-                currentUserId,
-                username,
-                email != null ? email : "",
-                "",
-                "User"
-        );
-        newUser.setPoints(0);
-        newUser.setTotalRecycled(0);
+            String[] cats = fullCat.split(",\\s*");
+            for (String cat : cats) {
+                categoryCount.put(cat, categoryCount.getOrDefault(cat, 0) + 1);
 
-        firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
-            @Override
-            public void onSuccess() {
-                txtUserName.setText(username);
-                txtEmail.setText(email != null ? email : "");
-                txtPoints.setText("0 pts");
-                txtTotalRecycled.setText("0 times");
-                txtTotalPoints.setText("0 pts");
+                if (cat.equalsIgnoreCase("Plastic")) totalTrees += 10;
+                else if (cat.equalsIgnoreCase("Paper")) totalTrees += 20;
+                else totalTrees += 5;
             }
+        }
 
-            @Override
-            public void onFailure(String error) {
-                Toast.makeText(getContext(), "Create user failed: " + error, Toast.LENGTH_SHORT).show();
-                setDefaultValues();
-            }
-        });
+        txtTreesSaved.setText("You save " + totalTrees + " Trees!");
+
+        List<PieEntry> entries = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : categoryCount.entrySet()) {
+            entries.add(new PieEntry(entry.getValue(), entry.getKey()));
+        }
+
+        PieDataSet dataSet = new PieDataSet(entries, "Recycling Distribution");
+        dataSet.setSliceSpace(3f);
+        dataSet.setSelectionShift(5f);
+        dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+
+        PieData data = new PieData(dataSet);
+        data.setValueTextSize(12f);
+        data.setValueTextColor(Color.BLACK);
+
+        pieChart.setData(data);
+        pieChart.invalidate();
     }
 
-    private void setDefaultValues() {
-        txtUserName.setText("Recycler");
-        txtEmail.setText("");
-        txtPoints.setText("0 pts");
-        txtTotalRecycled.setText("0 times");
-        txtTotalPoints.setText("0 pts");
+    private void updateRanking(List<UserRecord> list) {
+        if (list.size() >= 1) {
+            txtRank1Name.setText(list.get(0).getUsername());
+            txtRank1Points.setText(String.valueOf(list.get(0).getPoints()));
+        }
+        if (list.size() >= 2) {
+            txtRank2Name.setText(list.get(1).getUsername());
+            txtRank2Points.setText(String.valueOf(list.get(1).getPoints()));
+        }
+        if (list.size() >= 3) {
+            txtRank3Name.setText(list.get(2).getUsername());
+            txtRank3Points.setText(String.valueOf(list.get(2).getPoints()));
+        }
+
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getUid().equals(currentUserId)) {
+                int rank = i + 1;
+                String suffix = "th";
+                if (rank == 1) suffix = "st";
+                else if (rank == 2) suffix = "nd";
+                else if (rank == 3) suffix = "rd";
+                txtCurrentRank.setText(rank + suffix);
+                break;
+            }
+        }
     }
 }

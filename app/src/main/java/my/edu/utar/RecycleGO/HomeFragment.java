@@ -12,6 +12,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.cardview.widget.CardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.ListenerRegistration;
+import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class HomeFragment extends Fragment {
 
@@ -19,6 +22,9 @@ public class HomeFragment extends Fragment {
     CardView cardNews, cardRecycleNow, cardFindEvent, cardQuizPlastic, cardQuizFood;
     FloatingActionButton fabAiAssistant;
     ImageView imgPointsDropdown;
+    FirestoreManager firestoreManager;
+    String userId;
+    ListenerRegistration userListener;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -34,8 +40,11 @@ public class HomeFragment extends Fragment {
         fabAiAssistant = view.findViewById(R.id.fab_ai_assistant);
         imgPointsDropdown = view.findViewById(R.id.img_points_dropdown);
 
-        // Load Points
-        loadPoints();
+        firestoreManager = new FirestoreManager();
+        
+        // Use userId from SharedPreferences for session management
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userId = prefs.getString("loggedInUid", "");
 
         // Points Arrow click listener
         if (imgPointsDropdown != null) {
@@ -106,9 +115,7 @@ public class HomeFragment extends Fragment {
         // AI Assistant
         if (fabAiAssistant != null) {
             fabAiAssistant.setOnClickListener(v -> {
-                // Change AIAssistant to extend Fragment (not DialogFragment)
                 AIAssistant assistant = new AIAssistant();
-
                 getParentFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, assistant)
                         .addToBackStack(null)
@@ -120,17 +127,45 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
-    private void loadPoints() {
-        if (getContext() != null) {
-            SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-            int points = prefs.getInt("totalPoints", 1000);
-            txtPoints.setText(String.valueOf(points));
+    private void startListeningToPoints() {
+        if (userId == null || userId.isEmpty()) {
+            txtPoints.setText("0");
+            return;
         }
+
+        // Remove previous listener if exists
+        if (userListener != null) {
+            userListener.remove();
+        }
+
+        // Real-time listener to Firebase Firestore
+        userListener = firestoreManager.listenToUser(userId, new FirestoreManager.OnUserFetchListener() {
+            @Override
+            public void onUserFetched(UserRecord userRecord) {
+                if (userRecord != null && isAdded()) {
+                    txtPoints.setText(String.valueOf(userRecord.getPoints()));
+                }
+            }
+
+            @Override
+            public void onFailure(String error) {
+                // If Firebase fails, we don't fall back to 1000
+                txtPoints.setText("0");
+            }
+        });
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        loadPoints();
+    public void onStart() {
+        super.onStart();
+        startListeningToPoints();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (userListener != null) {
+            userListener.remove();
+        }
     }
 }

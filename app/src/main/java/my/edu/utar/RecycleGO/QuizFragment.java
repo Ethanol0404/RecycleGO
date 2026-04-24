@@ -11,12 +11,16 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import my.edu.utar.RecycleGO.database.FirestoreManager;
 
 public class QuizFragment extends Fragment {
 
@@ -30,6 +34,9 @@ public class QuizFragment extends Fragment {
     private int currentQuestionIndex = 0;
     private int score = 0;
 
+    private FirestoreManager firestoreManager;
+    private String userId;
+
     public QuizFragment() {
         // Required empty public constructor
     }
@@ -41,6 +48,10 @@ public class QuizFragment extends Fragment {
             category = getArguments().getString("category");
         }
         setupQuestions();
+        
+        firestoreManager = new FirestoreManager();
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userId = prefs.getString("loggedInUid", "");
     }
 
     private void setupQuestions() {
@@ -149,8 +160,6 @@ public class QuizFragment extends Fragment {
             buttons[selectedIndex].setBackgroundTintList(null);
             buttons[selectedIndex].setTextColor(android.graphics.Color.WHITE); 
         } else {
-            // Only turn the selected WRONG button red. 
-            // Do NOT turn the correct button green anymore.
             buttons[selectedIndex].setBackgroundResource(R.drawable.quiz_option_wrong_bg);
             buttons[selectedIndex].setBackgroundTintList(null);
             buttons[selectedIndex].setTextColor(android.graphics.Color.WHITE); 
@@ -175,9 +184,32 @@ public class QuizFragment extends Fragment {
         txtPointsEarned.setText("+" + totalPoints);
         txtScore.setText("Score: " + score + "/" + questions.size());
 
-        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        int currentPoints = prefs.getInt("totalPoints", 1000);
-        prefs.edit().putInt("totalPoints", currentPoints + totalPoints).apply();
+        if (userId != null && !userId.isEmpty() && totalPoints > 0) {
+            // 1. Update user total points in Firestore
+            firestoreManager.addPoints(userId, totalPoints, "Quiz", new FirestoreManager.OnTaskCompleteListener() {
+                @Override
+                public void onSuccess() {
+                    // 2. Save detailed Quiz record to its own collection
+                    firestoreManager.saveQuizRecord(userId, totalPoints, new FirestoreManager.OnTaskCompleteListener() {
+                        @Override
+                        public void onSuccess() {
+                            if (isAdded()) {
+                                Toast.makeText(getContext(), "Quiz record saved!", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        @Override
+                        public void onFailure(String error) {}
+                    });
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    if (isAdded()) {
+                        Toast.makeText(getContext(), "Failed: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
     }
 
     private static class Question {

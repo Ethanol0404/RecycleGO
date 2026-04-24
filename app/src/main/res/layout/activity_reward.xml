@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#C5D37C">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -10,157 +11,426 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 用户信息卡片 -->
-        <androidx.cardview.widget.CardView
+        <!-- Top User Info -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            card_view:cardCornerRadius="12dp"
-            card_view:cardElevation="4dp"
             android:layout_marginBottom="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp"
-                android:background="#4CAF50">
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/img_profile_reward"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/useravatar" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Welcome back,"
-                    android:textSize="14sp"
-                    android:textColor="#FFFFFF"
-                    android:alpha="0.9"/>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/img_profile_reward"
+                android:layout_marginStart="12dp"
+                android:layout_centerVertical="true"
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/txt_user_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Loading..."
-                    android:textSize="24sp"
+                    android:text="Baling0321"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="#FFFFFF"
-                    android:layout_marginTop="4dp"/>
+                    android:textColor="#333333" />
 
                 <TextView
-                    android:id="@+id/txt_email"
+                    android:id="@+id/txt_user_level"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text=""
-                    android:textSize="12sp"
-                    android:textColor="#FFFFFF"
-                    android:alpha="0.8"
-                    android:layout_marginTop="4dp"/>
-
+                    android:text="SILVER"
+                    android:textSize="14sp"
+                    android:textColor="#666666" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
 
-        <!-- 积分卡片 -->
-        <androidx.cardview.widget.CardView
+            <ImageView
+                android:id="@+id/img_notifications"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="40dp"
+                android:src="@drawable/notification_logo"
+                app:tint="#333333" />
+
+            <ImageView
+                android:id="@+id/img_menu"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/menu_logo"
+                app:tint="#333333" />
+        </RelativeLayout>
+
+        <!-- Points and Buttons -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            card_view:cardCornerRadius="12dp"
-            card_view:cardElevation="4dp"
+            android:orientation="horizontal"
+            android:gravity="bottom"
             android:layout_marginBottom="16dp">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Current Points"
-                    android:textSize="14sp"
-                    android:textColor="#666666"/>
+                    android:text="Points"
+                    android:textSize="24sp"
+                    android:textColor="#333333" />
 
                 <TextView
                     android:id="@+id/txt_points"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0 pts"
-                    android:textSize="48sp"
+                    android:text="1000"
+                    android:textSize="32sp"
                     android:textStyle="bold"
-                    android:textColor="#4CAF50"
-                    android:layout_marginTop="8dp"/>
-
+                    android:textColor="#333333" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
 
-        <!-- 统计卡片 -->
+            <Button
+                android:id="@+id/btn_redeem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Redeem"
+                android:backgroundTint="#008D41"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btn_history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="History"
+                android:backgroundTint="#81B622"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Pie Chart -->
+        <com.github.mikephil.charting.charts.PieChart
+            android:id="@+id/pieChart"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Tree Saving Banner -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            card_view:cardCornerRadius="12dp"
-            card_view:cardElevation="4dp"
-            android:layout_marginBottom="16dp">
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="#ADE3F2"
+            android:layout_marginBottom="24dp">
 
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="20dp">
+                android:padding="16dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
+                    android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@id/img_earth"
+                    android:layout_centerVertical="true"
+                    android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/txt_trees_saved"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Total Recycled"
-                        android:textSize="12sp"
-                        android:textColor="#666666"/>
-
-                    <TextView
-                        android:id="@+id/txt_total_recycled"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 times"
-                        android:textSize="18sp"
+                        android:text="You save 0 Trees!"
+                        android:textSize="20sp"
                         android:textStyle="bold"
-                        android:textColor="#2196F3"
-                        android:layout_marginTop="8dp"/>
+                        android:textColor="#333333" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Keep Going !"
+                        android:textSize="18sp"
+                        android:textColor="#333333" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="match_parent"
-                    android:background="#DDDDDD"
-                    android:layout_marginHorizontal="16dp"/>
+                <ImageView
+                    android:id="@+id/img_earth"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@android:drawable/ic_menu_myplaces" />
+            </RelativeLayout>
+        </androidx.cardview.widget.CardView>
 
-                <LinearLayout
-                    android:layout_width="0dp"
+        <!-- Rank Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/btn_star_big_on"
+                app:tint="#333333" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rank"
+                android:textSize="28sp"
+                android:textColor="#333333"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Top 3 Ranking -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:gravity="bottom">
+
+            <!-- 2nd Rank -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
+                    android:text="2nd"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#555555" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="#214D0E"
+                    android:layout_margin="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Lifetime Points"
-                        android:textSize="12sp"
-                        android:textColor="#666666"/>
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="8dp">
 
-                    <TextView
-                        android:id="@+id/txt_total_points"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 pts"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="#FF9800"
-                        android:layout_marginTop="8dp"/>
-                </LinearLayout>
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/img_rank2"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:src="@drawable/useravatar" />
 
+                        <TextView
+                            android:id="@+id/txt_rank2_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/txt_rank2_points"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="#EBB000"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
             </LinearLayout>
+
+            <!-- 1st Rank -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1st"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="#EBB000" />
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="#214D0E"
+                    android:layout_margin="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="8dp">
+
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/img_rank1"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:src="@drawable/useravatar" />
+
+                        <TextView
+                            android:id="@+id/txt_rank1_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/txt_rank1_points"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="#EBB000"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <!-- 3rd Rank -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3rd"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#A0522D" />
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="#214D0E"
+                    android:layout_margin="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="8dp">
+
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/img_rank3"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:src="@drawable/useravatar" />
+
+                        <TextView
+                            android:id="@+id/txt_rank3_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/txt_rank3_points"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="#EBB000"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Current User Rank Bar -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="30dp"
+            app:cardBackgroundColor="#214D0E"
+            android:layout_marginTop="16dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp">
+
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/img_current_user_rank"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/useravatar" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@id/img_current_user_rank"
+                    android:layout_marginStart="12dp"
+                    android:layout_centerVertical="true"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/txt_current_user_points"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#EBB000"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txt_current_user_name_rank"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Baling0321"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/txt_current_rank"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@android:drawable/btn_star_big_on"
+                    android:gravity="center"
+                    android:text="29th"
+                    android:textColor="#333333"
+                    android:textStyle="bold"
+                    android:paddingTop="4dp" />
+            </RelativeLayout>
         </androidx.cardview.widget.CardView>
 
     </LinearLayout>
