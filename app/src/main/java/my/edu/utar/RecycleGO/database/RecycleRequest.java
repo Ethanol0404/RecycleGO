@@ -1,5 +1,6 @@
 package my.edu.utar.RecycleGO.database;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentId;
 
 public class RecycleRequest implements java.io.Serializable {
@@ -16,6 +17,9 @@ public class RecycleRequest implements java.io.Serializable {
     private String photoUrl; // Added for storing image reference
     private String address;
     private java.util.List<String> targetCenterIds;
+    private Timestamp lastMessageTime;
+    private Timestamp lastReadUser;
+    private Timestamp lastReadAdmin;
 
     public RecycleRequest() {
         // Required for Firestore
@@ -68,4 +72,13 @@ public class RecycleRequest implements java.io.Serializable {
 
     public java.util.List<String> getTargetCenterIds() { return targetCenterIds; }
     public void setTargetCenterIds(java.util.List<String> targetCenterIds) { this.targetCenterIds = targetCenterIds; }
+
+    public Timestamp getLastMessageTime() { return lastMessageTime; }
+    public void setLastMessageTime(Timestamp lastMessageTime) { this.lastMessageTime = lastMessageTime; }
+
+    public Timestamp getLastReadUser() { return lastReadUser; }
+    public void setLastReadUser(Timestamp lastReadUser) { this.lastReadUser = lastReadUser; }
+
+    public Timestamp getLastReadAdmin() { return lastReadAdmin; }
+    public void setLastReadAdmin(Timestamp lastReadAdmin) { this.lastReadAdmin = lastReadAdmin; }
 }

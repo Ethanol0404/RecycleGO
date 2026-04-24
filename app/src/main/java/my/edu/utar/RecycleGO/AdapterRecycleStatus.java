@@ -19,6 +19,7 @@ import my.edu.utar.RecycleGO.database.RecycleRequest;
 public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleStatus.ViewHolder> {
     private List<RecycleRequest> list;
     private OnStatusActionListener actionListener;
+    private boolean isAdmin;
 
     public interface OnStatusActionListener {
         void onAccept(RecycleRequest request);
@@ -27,8 +28,9 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
         void onItemClick(RecycleRequest request);
     }
 
-    public AdapterRecycleStatus(List<RecycleRequest> list, OnStatusActionListener actionListener) { 
+    public AdapterRecycleStatus(List<RecycleRequest> list, boolean isAdmin, OnStatusActionListener actionListener) { 
         this.list = list; 
+        this.isAdmin = isAdmin;
         this.actionListener = actionListener;
     }
 
@@ -77,7 +79,7 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
                     break;
                 case "Completed":
                     holder.card.setCardBackgroundColor(Color.parseColor("#FFF176"));
-                    holder.btnConfirmComplete.setVisibility(View.VISIBLE);
+                    if (!isAdmin) holder.btnConfirmComplete.setVisibility(View.VISIBLE);
                     break;
                 case "Verified":
                     holder.card.setCardBackgroundColor(Color.parseColor("#FFF176"));

@@ -148,8 +148,7 @@ public class PickUpActivity extends Fragment {
                     if (editRequest.getTargetCenterIds() != null && !editRequest.getTargetCenterIds().isEmpty()) {
                         selectedCenterIds = new ArrayList<>(editRequest.getTargetCenterIds());
                         selectedCenterNames = new ArrayList<>();
-                        // Note: centerName might be a summary string if multiple. 
-                        // Usually we'd need to fetch full names if they aren't in the request.
+                        //centerName might be a summary string if multiple.
                         selectedCenterNames.add(editRequest.getCenterName()); 
                     } else if (editRequest.getCenterId() != null) {
                         selectedCenterIds.add(editRequest.getCenterId());
@@ -171,8 +170,7 @@ public class PickUpActivity extends Fragment {
         } else {
             args.putString("flow", "STATUS_TO_FORM");
         }
-        
-        // Pass current form data as draft
+
         args.putString("category", draft.getCategory());
         args.putString("date", draft.getDate());
         args.putString("contact", draft.getContact());
@@ -338,7 +336,7 @@ public class PickUpActivity extends Fragment {
                     }).show();
         });
 
-        String[] categories = {"Plastic", "Metal", "Paper", "Glass"};
+        String[] categories = {"Plastic", "Metal", "Paper", "Glass", "Others"};
         boolean[] checkedItems = {false, false, false, false};
 
         etCategory.setOnClickListener(v -> {

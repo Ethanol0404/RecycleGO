@@ -1,5 +1,6 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,7 +9,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,14 +33,15 @@ import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class RecycleStatus extends Fragment {
 
-    private RecyclerView recyclerView;
+    private RecyclerView recyclerView, rvMessages;
     private AdapterRecycleStatus adapter;
+    private AdapterChatList chatAdapter;
     private List<RecycleRequest> allItems = new ArrayList<>();
     private String currentFilter = "Selected: All";
     private FirestoreManager firestoreManager;
     private String userId;
     private String userRole;
-    private View layoutStatus, layoutMessage; 
+    private View layoutStatus, layoutMessages; 
     private com.google.android.material.button.MaterialButtonToggleGroup toggleGroup;
     private ListenerRegistration snapshotListener;
     private androidx.swiperefreshlayout.widget.SwipeRefreshLayout swipeRefresh;
@@ -67,10 +69,16 @@ public class RecycleStatus extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Setup RecyclerView
+        // Setup Layouts
+        layoutStatus = view.findViewById(R.id.layout_status_list);
+        layoutMessages = view.findViewById(R.id.layout_message_list);
+        toggleGroup = view.findViewById(R.id.toggleGroup);
+
+        // Setup RecyclerViews
         recyclerView = view.findViewById(R.id.rvRecycleStatus);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new AdapterRecycleStatus(new ArrayList<>(), new AdapterRecycleStatus.OnStatusActionListener() {
+        boolean isAdmin = "Admin".equals(userRole);
+        adapter = new AdapterRecycleStatus(new ArrayList<>(), isAdmin, new AdapterRecycleStatus.OnStatusActionListener() {
             @Override
             public void onAccept(RecycleRequest request) { updateStatus(request.getId(), "Accepted"); }
             @Override
@@ -81,6 +89,41 @@ public class RecycleStatus extends Fragment {
             public void onItemClick(RecycleRequest request) { showDetailPopup(request); }
         });
         recyclerView.setAdapter(adapter);
+
+        rvMessages = view.findViewById(R.id.rvMessages);
+        rvMessages.setLayoutManager(new LinearLayoutManager(getContext()));
+        chatAdapter = new AdapterChatList(new ArrayList<>(), userRole, new AdapterChatList.OnChatActionListener() {
+            @Override
+            public void onChatClick(RecycleRequest request) {
+                Intent intent = new Intent(requireContext(), ChatDirectActivity.class);
+                intent.putExtra("requestId", request.getId());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onDeleteChat(RecycleRequest request) {
+                // For now, let's just hide it locally
+                Toast.makeText(getContext(), "Chat removed from list", Toast.LENGTH_SHORT).show();
+                allItems.remove(request);
+                applyFilter();
+            }
+        });
+        rvMessages.setAdapter(chatAdapter);
+
+        if (toggleGroup != null) {
+            toggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+                if (isChecked) {
+                    if (checkedId == R.id.btn_status_list) {
+                        if (layoutStatus != null) layoutStatus.setVisibility(View.VISIBLE);
+                        if (layoutMessages != null) layoutMessages.setVisibility(View.GONE);
+                    } else {
+                        if (layoutStatus != null) layoutStatus.setVisibility(View.GONE);
+                        if (layoutMessages != null) layoutMessages.setVisibility(View.VISIBLE);
+                        applyFilter(); // Refresh message list
+                    }
+                }
+            });
+        }
 
         // Setup Spinner
         Spinner spinner = view.findViewById(R.id.statusSpinner);
@@ -116,24 +159,6 @@ public class RecycleStatus extends Fragment {
                         .replace(R.id.fragment_container, nextFragment)
                         .addToBackStack("RECYCLE_STATUS")
                         .commit();
-            });
-        }
-
-        layoutStatus = view.findViewById(R.id.layout_status_list);
-        layoutMessage = view.findViewById(R.id.layout_message_list);
-        toggleGroup = view.findViewById(R.id.toggleGroup);
-
-        if (toggleGroup != null) {
-            toggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-                if (isChecked) {
-                    if (checkedId == R.id.btn_status_list) {
-                        if (layoutStatus != null) layoutStatus.setVisibility(View.VISIBLE);
-                        if (layoutMessage != null) layoutMessage.setVisibility(View.GONE);
-                    } else {
-                        if (layoutStatus != null) layoutStatus.setVisibility(View.GONE);
-                        if (layoutMessage != null) layoutMessage.setVisibility(View.VISIBLE);
-                    }
-                }
             });
         }
 
@@ -195,6 +220,23 @@ public class RecycleStatus extends Fragment {
     }
 
     private void applyFilter() {
+        // Global unread check for tab dot
+        boolean hasUnread = false;
+        for (RecycleRequest r : allItems) {
+            if (isRequestUnread(r)) {
+                hasUnread = true;
+                break;
+            }
+        }
+        View dotTab = getView() != null ? getView().findViewById(R.id.dot_unread_tab) : null;
+        if (dotTab != null) dotTab.setVisibility(hasUnread ? View.VISIBLE : View.GONE);
+
+        if (toggleGroup != null && toggleGroup.getCheckedButtonId() == R.id.btn_message_list) {
+            chatAdapter.updateList(allItems);
+            View tvNoMsg = getView() != null ? getView().findViewById(R.id.tv_no_messages) : null;
+            if (tvNoMsg != null) tvNoMsg.setVisibility(allItems.isEmpty() ? View.VISIBLE : View.GONE);
+            return;
+        }
         if (adapter == null) return;
         
         List<RecycleRequest> filtered = new ArrayList<>();
@@ -253,9 +295,6 @@ public class RecycleStatus extends Fragment {
         Button btnReport = view.findViewById(R.id.btn_action_report);
         Button btnMsg = view.findViewById(R.id.btn_action_message);
 
-        boolean isAdmin = "Admin".equalsIgnoreCase(userRole);
-        String s = request.getStatus();
-
         // Reset visibility
         btnEdit.setVisibility(View.GONE);
         btnDelete.setVisibility(View.GONE);
@@ -265,19 +304,45 @@ public class RecycleStatus extends Fragment {
         btnReport.setVisibility(View.GONE);
         btnMsg.setVisibility(View.GONE);
 
-        if ("Requesting".equalsIgnoreCase(s)) {
-            btnEdit.setVisibility(View.VISIBLE);
-            btnDelete.setVisibility(View.VISIBLE);
-            if (isAdmin) btnAccept.setVisibility(View.VISIBLE);
-        } else if ("Accepted".equalsIgnoreCase(s)) {
-            btnMsg.setVisibility(View.VISIBLE);
-            btnEdit.setVisibility(View.VISIBLE);
-            btnDelete.setVisibility(View.VISIBLE);
-            if (isAdmin) btnConfirmPickup.setVisibility(View.VISIBLE);
-        } else if ("Completed".equalsIgnoreCase(s)) {
-            btnMsg.setVisibility(View.VISIBLE);
-            btnReport.setVisibility(View.VISIBLE);
-        }
+        firestoreManager.getUser(userId, new FirestoreManager.OnUserFetchListener() {
+            @Override
+            public void onUserFetched(my.edu.utar.RecycleGO.database.UserRecord user) {
+                boolean isAdmin = user != null && "Admin".equals(user.getRole());
+                
+                // Show Edit/Delete ONLY for User (Creator)
+                if (!isAdmin && userId.equals(request.getUserId())) {
+                    if ("Requesting".equals(request.getStatus())) {
+                        btnEdit.setVisibility(View.VISIBLE);
+                        btnDelete.setVisibility(View.VISIBLE);
+                    }
+                }
+
+                // Show Accept ONLY for Admin
+                if (isAdmin && "Requesting".equals(request.getStatus())) {
+                    btnAccept.setVisibility(View.VISIBLE);
+                }
+
+                // Show Confirm Pickup ONLY for Admin
+                if (isAdmin && "Accepted".equals(request.getStatus())) {
+                    btnConfirmPickup.setVisibility(View.VISIBLE);
+                }
+
+                // Show Confirm Complete ONLY for User
+                if (!isAdmin && "Completed".equals(request.getStatus())) {
+                    btnConfirmComplete.setVisibility(View.VISIBLE);
+                }
+                
+                // Chat button hidden if status is Requesting (no one to chat with yet)
+                if (!"Requesting".equalsIgnoreCase(request.getStatus())) {
+                    btnMsg.setVisibility(View.VISIBLE);
+                }
+                
+                // Message/Report always visible for context
+                btnReport.setVisibility(View.VISIBLE);
+            }
+            @Override
+            public void onFailure(String error) {}
+        });
 
         btnEdit.setOnClickListener(v -> {
             Fragment nextFragment = new PickUpActivity();
@@ -320,14 +385,41 @@ public class RecycleStatus extends Fragment {
         btnDelete.setOnClickListener(v -> { deleteRequest(request.getId()); dialog.dismiss(); });
         
         btnMsg.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Opening Messages...", Toast.LENGTH_SHORT).show();
-            // Optional: Toggle to message tab or open AI Assistant
-            if (toggleGroup != null) toggleGroup.check(R.id.btn_message_list);
+            Intent intent = new Intent(requireContext(), ChatDirectActivity.class);
+            intent.putExtra("requestId", request.getId());
+            startActivity(intent);
             dialog.dismiss();
         });
 
         btnReport.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Report submitted for request " + request.getId().substring(0, 5), Toast.LENGTH_SHORT).show();
+            android.app.AlertDialog.Builder reportBuilder = new android.app.AlertDialog.Builder(requireContext());
+            reportBuilder.setTitle("Report Issue");
+            
+            final EditText input = new EditText(requireContext());
+            input.setHint("Describe the issue with this pick-up...");
+            reportBuilder.setView(input);
+
+            reportBuilder.setPositiveButton("Submit", (reportDialog, which) -> {
+                String reason = input.getText().toString().trim();
+                if (reason.isEmpty()) {
+                    Toast.makeText(getContext(), "Please enter a reason", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                firestoreManager.submitReport(request.getId(), userId, reason, new FirestoreManager.OnTaskCompleteListener() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(getContext(), "Report submitted successfully", Toast.LENGTH_SHORT).show();
+                    }
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(getContext(), "Failed to submit report: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
+            
+            reportBuilder.setNegativeButton("Cancel", null);
+            reportBuilder.show();
             dialog.dismiss();
         });
 
@@ -368,5 +460,12 @@ public class RecycleStatus extends Fragment {
         if (snapshotListener != null) {
             snapshotListener.remove();
         }
+    }
+
+    private boolean isRequestUnread(RecycleRequest r) {
+        if (r.getLastMessageTime() == null) return false;
+        com.google.firebase.Timestamp lastRead = "Admin".equals(userRole) ? r.getLastReadAdmin() : r.getLastReadUser();
+        if (lastRead == null) return true; // Never read
+        return r.getLastMessageTime().compareTo(lastRead) > 0;
     }
 }
