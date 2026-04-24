@@ -14,6 +14,8 @@ public class RecycleRequest implements java.io.Serializable {
     private String centerName;
     private String status; // "Requesting", "Accepted", "Completed"
     private String photoUrl; // Added for storing image reference
+    private String address;
+    private java.util.List<String> targetCenterIds;
 
     public RecycleRequest() {
         // Required for Firestore
@@ -25,6 +27,8 @@ public class RecycleRequest implements java.io.Serializable {
         this.date = date;
         this.contact = contact;
         this.remarks = remarks;
+        this.address = "";
+        this.targetCenterIds = new java.util.ArrayList<>();
         this.status = "Requesting";
     }
 
@@ -58,4 +62,10 @@ public class RecycleRequest implements java.io.Serializable {
 
     public String getPhotoUrl() { return photoUrl; }
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public java.util.List<String> getTargetCenterIds() { return targetCenterIds; }
+    public void setTargetCenterIds(java.util.List<String> targetCenterIds) { this.targetCenterIds = targetCenterIds; }
 }

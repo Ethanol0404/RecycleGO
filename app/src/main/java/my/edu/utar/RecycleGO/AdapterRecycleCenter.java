@@ -19,6 +19,7 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
     private OnItemClickListener listener;
     private boolean isAdmin = false;
     private List<String> joinedCenters = new java.util.ArrayList<>();
+    private List<String> selectedCenterIds = new java.util.ArrayList<>();
 
     public interface OnItemClickListener {
         void onItemClick(RecycleCenter center);
@@ -38,6 +39,13 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
     public void setJoinedCenters(List<String> joinedCenters) {
         if (joinedCenters != null) {
             this.joinedCenters = joinedCenters;
+            notifyDataSetChanged();
+        }
+    }
+
+    public void setSelectedCenterIds(List<String> selectedCenterIds) {
+        if (selectedCenterIds != null) {
+            this.selectedCenterIds = selectedCenterIds;
             notifyDataSetChanged();
         }
     }
@@ -74,7 +82,13 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
                 holder.btnRecycle.setEnabled(true);
             }
         } else {
-            holder.btnRecycle.setText("Recycle");
+            if (selectedCenterIds.contains(center.id)) {
+                holder.btnRecycle.setText("Selected");
+                holder.btnRecycle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50")));
+            } else {
+                holder.btnRecycle.setText("Recycle");
+                holder.btnRecycle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2E6A5E")));
+            }
             holder.btnRecycle.setEnabled(true);
         }
         

@@ -79,7 +79,8 @@ public class Map extends Fragment {
     private String userRole = "User"; 
     private RecycleRequest draftRequest;
     private FirestoreManager firestoreManager;
-    private com.google.android.material.floatingactionbutton.FloatingActionButton btnAddCenter;
+    private List<String> selectedCenterIds = new ArrayList<>();
+    private com.google.android.material.floatingactionbutton.FloatingActionButton btnAddCenter, btnConfirmSelection;
     private android.widget.ImageButton btnSearchAdd;
     private android.widget.EditText etSearch;
 
@@ -121,12 +122,17 @@ public class Map extends Fragment {
 
         if (getArguments() != null) {
             flow = getArguments().getString("flow", "NORMAL");
+            if (getArguments().containsKey("selectedCenterIds")) {
+                selectedCenterIds = getArguments().getStringArrayList("selectedCenterIds");
+            }
+            
             if (flow.equals("STATUS_TO_FORM")) {
                 draftRequest = new RecycleRequest();
                 draftRequest.setUserId(getArguments().getString("userId"));
                 draftRequest.setCategory(getArguments().getString("category"));
                 draftRequest.setDate(getArguments().getString("date"));
                 draftRequest.setContact(getArguments().getString("contact"));
+                draftRequest.setAddress(getArguments().getString("address"));
                 draftRequest.setRemarks(getArguments().getString("remarks"));
                 draftRequest.setStatus("Requesting");
             }
@@ -153,6 +159,15 @@ public class Map extends Fragment {
         etSearch = view.findViewById(R.id.et_map_search);
         btnSearchAdd = view.findViewById(R.id.map_btnSearchAdd);
         btnAddCenter = view.findViewById(R.id.map_btnAddCenter);
+        btnConfirmSelection = view.findViewById(R.id.map_btnConfirmSelection);
+
+        btnConfirmSelection.setOnClickListener(v -> {
+            if ("STATUS_TO_FORM".equals(flow) || "MAP_TO_FORM".equals(flow)) {
+                returnSelectedCentersToForm();
+            } else {
+                submitMultiCenterRequest();
+            }
+        });
 
         etSearch.addTextChangedListener(new android.text.TextWatcher() {
             @Override
@@ -244,6 +259,11 @@ public class Map extends Fragment {
 
         checkPermissionsAndStart();
         loadAndPopulateData();
+        
+        if (!selectedCenterIds.isEmpty()) {
+            btnConfirmSelection.setVisibility(View.VISIBLE);
+        }
+        
         return view;
     }
 
@@ -320,6 +340,7 @@ public class Map extends Fragment {
             }
         });
         adapter.setIsAdmin(userRole.equalsIgnoreCase("Admin") || "SIGNUP_TO_MAP".equals(flow));
+        adapter.setSelectedCenterIds(selectedCenterIds);
         recyclerView.setAdapter(adapter);
     }
 
@@ -346,20 +367,21 @@ public class Map extends Fragment {
     }
 
     private void handleSelection(RecycleCenter center) {
-        if ("STATUS_TO_FORM".equals(flow) && draftRequest != null) {
-            draftRequest.setCenterId(center.id);
-            draftRequest.setCenterName(center.name);
-            firestoreManager.submitRequest(draftRequest, new FirestoreManager.OnTaskCompleteListener() {
-                @Override
-                public void onSuccess() {
-                    Toast.makeText(getContext(), "Request Submitted!", Toast.LENGTH_SHORT).show();
-                    getParentFragmentManager().beginTransaction().replace(R.id.fragment_container, new RecycleStatus()).commit();
-                }
-                @Override
-                public void onFailure(String error) {
-                    Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
-                }
-            });
+        if ("STATUS_TO_FORM".equals(flow) || "MAP_TO_FORM".equals(flow)) {
+            if (selectedCenterIds.contains(center.id)) {
+                selectedCenterIds.remove(center.id);
+            } else {
+                selectedCenterIds.add(center.id);
+            }
+            
+            adapter.notifyDataSetChanged();
+            addMarkers();
+            
+            if (selectedCenterIds.isEmpty()) {
+                btnConfirmSelection.setVisibility(View.GONE);
+            } else {
+                btnConfirmSelection.setVisibility(View.VISIBLE);
+            }
         } else if ("SIGNUP_TO_MAP".equals(flow)) {
             Intent intent = new Intent();
             intent.putExtra("selectedCenter", center.name);
@@ -367,6 +389,7 @@ public class Map extends Fragment {
             requireActivity().setResult(android.app.Activity.RESULT_OK, intent);
             requireActivity().finish();
         } else {
+            // Start from Map, single select
             Fragment f = new PickUpActivity();
             Bundle args = new Bundle();
             args.putString("flow", "MAP_TO_FORM");
@@ -375,6 +398,67 @@ public class Map extends Fragment {
             f.setArguments(args);
             getParentFragmentManager().beginTransaction().replace(R.id.fragment_container, f).addToBackStack(null).commit();
         }
+    }
+
+    private void returnSelectedCentersToForm() {
+        Fragment f = new PickUpActivity();
+        Bundle args = new Bundle();
+        if (getArguments() != null) {
+            args.putAll(getArguments());
+        }
+        
+        ArrayList<String> names = new ArrayList<>();
+        for (String id : selectedCenterIds) {
+            for (RecycleCenter c : fullCenterList) {
+                if (c.id.equals(id)) {
+                    names.add(c.name);
+                    break;
+                }
+            }
+        }
+        
+        args.putStringArrayList("selectedCenterIds", new ArrayList<>(selectedCenterIds));
+        args.putStringArrayList("selectedCenterNames", names);
+        args.putString("flow", "MAP_TO_FORM");
+        f.setArguments(args);
+        
+        getParentFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, f)
+                .commit();
+    }
+
+    private void submitMultiCenterRequest() {
+        if (draftRequest == null || selectedCenterIds.isEmpty()) return;
+        
+        draftRequest.setTargetCenterIds(new ArrayList<>(selectedCenterIds));
+        // Set centerName to a summary for display in the status list
+        if (selectedCenterIds.size() == 1) {
+             // Find name for single center
+             for (RecycleCenter c : fullCenterList) {
+                 if (c.id.equals(selectedCenterIds.get(0))) {
+                     draftRequest.setCenterName(c.name);
+                     draftRequest.setCenterId(c.id);
+                     break;
+                 }
+             }
+        } else {
+            draftRequest.setCenterName("Multiple Centers (" + selectedCenterIds.size() + ")");
+            draftRequest.setCenterId("MULTIPLE");
+        }
+
+        firestoreManager.submitRequest(draftRequest, new FirestoreManager.OnTaskCompleteListener() {
+            @Override
+            public void onSuccess() {
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Request Submitted to " + selectedCenterIds.size() + " centers!", Toast.LENGTH_SHORT).show();
+                    getParentFragmentManager().beginTransaction().replace(R.id.fragment_container, new RecycleStatus()).commit();
+                }
+            }
+            @Override
+            public void onFailure(String error) {
+                if (isAdded()) Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void checkPermissionsAndStart() {
@@ -455,6 +539,9 @@ public class Map extends Fragment {
             marker.setPosition(new GeoPoint(center.latitude, center.longitude));
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             marker.setTitle(center.name);
+            if (selectedCenterIds.contains(center.id)) {
+                marker.setIcon(requireContext().getDrawable(org.osmdroid.library.R.drawable.marker_default_focused_base));
+            }
             marker.setInfoWindow(new CustomInfoWindow(R.layout.layout_map_bubble, mapView, center));
             marker.setOnMarkerClickListener((m, mv) -> {
                 isMapMovingProgrammatically = true;

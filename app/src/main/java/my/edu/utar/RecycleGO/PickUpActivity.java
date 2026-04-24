@@ -25,6 +25,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -35,13 +36,14 @@ import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class PickUpActivity extends Fragment {
 
-    private TextInputEditText etCategory, etDate, etContact, etRemarks;
+    private TextInputEditText etCategory, etDate, etContact, etAddress, etRemarks, etCenter;
     private ImageButton btnPhoto;
     private Button btnSubmit;
 
     private String flow = "STATUS_TO_FORM";
-    private String selectedCenterId = null;
-    private String selectedCenterName = null;
+    private ArrayList<String> selectedCenterIds = new ArrayList<>();
+    private ArrayList<String> selectedCenterNames = new ArrayList<>();
+    
     private FirestoreManager firestoreManager;
     private RecycleRequest editRequest = null;
     private boolean isEditMode = false;
@@ -121,11 +123,39 @@ public class PickUpActivity extends Fragment {
 
         if (getArguments() != null) {
             flow = getArguments().getString("flow", "STATUS_TO_FORM");
-            selectedCenterId = getArguments().getString("centerId");
-            selectedCenterName = getArguments().getString("centerName");
+            
+            // Handle multiple centers from Map
+            if (getArguments().containsKey("selectedCenterIds")) {
+                selectedCenterIds = getArguments().getStringArrayList("selectedCenterIds");
+            } else if (getArguments().containsKey("centerId")) {
+                selectedCenterIds = new ArrayList<>();
+                selectedCenterIds.add(getArguments().getString("centerId"));
+            }
+            
+            if (getArguments().containsKey("selectedCenterNames")) {
+                selectedCenterNames = getArguments().getStringArrayList("selectedCenterNames");
+            } else if (getArguments().containsKey("centerName")) {
+                selectedCenterNames = new ArrayList<>();
+                selectedCenterNames.add(getArguments().getString("centerName"));
+            }
+
             if (getArguments().containsKey("edit_request")) {
                 editRequest = (RecycleRequest) getArguments().getSerializable("edit_request");
                 isEditMode = (editRequest != null);
+                
+                // If we just entered edit mode and have no selection yet, load from request
+                if (isEditMode && selectedCenterIds.isEmpty()) {
+                    if (editRequest.getTargetCenterIds() != null && !editRequest.getTargetCenterIds().isEmpty()) {
+                        selectedCenterIds = new ArrayList<>(editRequest.getTargetCenterIds());
+                        selectedCenterNames = new ArrayList<>();
+                        // Note: centerName might be a summary string if multiple. 
+                        // Usually we'd need to fetch full names if they aren't in the request.
+                        selectedCenterNames.add(editRequest.getCenterName()); 
+                    } else if (editRequest.getCenterId() != null) {
+                        selectedCenterIds.add(editRequest.getCenterId());
+                        selectedCenterNames.add(editRequest.getCenterName());
+                    }
+                }
             }
         }
     }
@@ -133,12 +163,26 @@ public class PickUpActivity extends Fragment {
     private void navigateToMap(RecycleRequest draft) {
         Fragment nextFragment = new Map();
         Bundle args = new Bundle();
-        args.putString("flow", "STATUS_TO_FORM");
+        
+        // Preserve flow and edit mode
+        if (isEditMode) {
+            args.putString("flow", "MAP_TO_FORM");
+            args.putSerializable("edit_request", editRequest);
+        } else {
+            args.putString("flow", "STATUS_TO_FORM");
+        }
+        
+        // Pass current form data as draft
         args.putString("category", draft.getCategory());
         args.putString("date", draft.getDate());
         args.putString("contact", draft.getContact());
+        args.putString("address", draft.getAddress());
         args.putString("remarks", draft.getRemarks());
         args.putString("userId", draft.getUserId());
+        
+        // Pass current selection so Map can highlight them
+        args.putStringArrayList("selectedCenterIds", selectedCenterIds);
+        
         nextFragment.setArguments(args);
 
         getParentFragmentManager().beginTransaction()
@@ -240,7 +284,9 @@ public class PickUpActivity extends Fragment {
         etCategory = view.findViewById(R.id.etCategory);
         etDate = view.findViewById(R.id.etDate);
         etContact = view.findViewById(R.id.etContact);
+        etAddress = view.findViewById(R.id.etAddress);
         etRemarks = view.findViewById(R.id.etRemarks);
+        etCenter = view.findViewById(R.id.etCenter);
         btnSubmit = view.findViewById(R.id.btnSubmit);
 
         if (selectedImageUri != null) {
@@ -252,13 +298,27 @@ public class PickUpActivity extends Fragment {
             }
         }
 
+        updateCenterDisplayText();
+
         if (isEditMode) {
             etCategory.setText(editRequest.getCategory());
             etDate.setText(editRequest.getDate());
             etContact.setText(editRequest.getContact());
+            etAddress.setText(editRequest.getAddress());
             etRemarks.setText(editRequest.getRemarks());
             btnSubmit.setText("Update Request");
         }
+
+        etCenter.setOnClickListener(v -> {
+            RecycleRequest currentDraft = new RecycleRequest();
+            currentDraft.setCategory(etCategory.getText().toString());
+            currentDraft.setDate(etDate.getText().toString());
+            currentDraft.setContact(etContact.getText().toString());
+            currentDraft.setAddress(etAddress.getText().toString());
+            currentDraft.setRemarks(etRemarks.getText().toString());
+            currentDraft.setUserId(isEditMode ? editRequest.getUserId() : "");
+            navigateToMap(currentDraft);
+        });
 
         btnPhoto.setOnClickListener(v -> {
             String[] options = {"Take Photo", "Choose from Gallery"};
@@ -317,31 +377,31 @@ public class PickUpActivity extends Fragment {
             String category = etCategory.getText().toString().trim();
             String date = etDate.getText().toString().trim();
             String contact = etContact.getText().toString().trim();
+            String address = etAddress.getText().toString().trim();
             String remarks = etRemarks.getText().toString().trim();
 
-            if (category.isEmpty() || date.isEmpty() || contact.isEmpty()) {
+            if (category.isEmpty() || date.isEmpty() || contact.isEmpty() || address.isEmpty()) {
                 Toast.makeText(getContext(), "Please fill all required fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (selectedCenterIds.isEmpty()) {
+                Toast.makeText(getContext(), "Please select at least one target center", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
             String currentUid = prefs.getString("loggedInUid", "");
 
-            RecycleRequest request = new RecycleRequest(
-                    currentUid,
-                    category, date, contact, remarks
-            );
-
-            if (selectedImageUri != null) {
-                savedImageFileName = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
-                request.setPhotoUrl(savedImageFileName);
-            }
-
             if (isEditMode) {
                 editRequest.setCategory(category);
                 editRequest.setDate(date);
                 editRequest.setContact(contact);
+                editRequest.setAddress(address);
                 editRequest.setRemarks(remarks);
+                
+                applySelectionToRequest(editRequest);
+                
                 if (selectedImageUri != null) {
                     savedImageFileName = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
                     editRequest.setPhotoUrl(savedImageFileName);
@@ -361,16 +421,39 @@ public class PickUpActivity extends Fragment {
                         if (isAdded()) Toast.makeText(getContext(), "Update failed: " + error, Toast.LENGTH_SHORT).show();
                     }
                 });
-            } else if (flow.equals("MAP_TO_FORM")) {
-                request.setCenterId(selectedCenterId);
-                request.setCenterName(selectedCenterName);
-                submitToFirestore(request);
             } else {
-                navigateToMap(request);
+                RecycleRequest request = new RecycleRequest(
+                        currentUid,
+                        category, date, contact, remarks
+                );
+                request.setAddress(address);
+                applySelectionToRequest(request);
+                submitToFirestore(request);
             }
         });
 
         return view;
+    }
+
+    private void applySelectionToRequest(RecycleRequest request) {
+        request.setTargetCenterIds(new ArrayList<>(selectedCenterIds));
+        if (selectedCenterIds.size() == 1) {
+            request.setCenterId(selectedCenterIds.get(0));
+            request.setCenterName(selectedCenterNames.get(0));
+        } else {
+            request.setCenterId("MULTIPLE");
+            request.setCenterName("Multiple Centers (" + selectedCenterIds.size() + ")");
+        }
+    }
+
+    private void updateCenterDisplayText() {
+        if (selectedCenterNames.isEmpty()) {
+            etCenter.setText("");
+        } else if (selectedCenterNames.size() == 1) {
+            etCenter.setText(selectedCenterNames.get(0));
+        } else {
+            etCenter.setText("Multiple Centers (" + selectedCenterNames.size() + ")");
+        }
     }
 
     @Override

@@ -85,6 +85,8 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-    //asset
-    implementation("com.google.code.gson:gson:2.10.1")
+    // Asset & REST API
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.gson)
 }

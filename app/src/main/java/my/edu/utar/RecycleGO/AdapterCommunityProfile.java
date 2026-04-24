@@ -8,8 +8,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
-
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -41,12 +39,7 @@ public class AdapterCommunityProfile extends RecyclerView.Adapter<AdapterCommuni
         CommunityModel community = communityList.get(position);
         holder.tvName.setText(community.getName());
 
-        if (community.getIconUrl() != null && !community.getIconUrl().isEmpty()) {
-            Glide.with(holder.itemView.getContext())
-                .load(community.getIconUrl())
-                .placeholder(R.drawable.profile_circle)
-                .into(holder.ivIcon);
-        }
+        my.edu.utar.RecycleGO.utils.ImageManager.loadImage(holder.itemView.getContext(), community.getIconUrl(), holder.ivIcon);
 
         holder.itemView.setOnClickListener(v -> listener.onCommunityClick(community));
     }

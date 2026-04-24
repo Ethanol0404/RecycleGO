@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -235,7 +236,14 @@ public class RecycleStatus extends Fragment {
         ((TextView)view.findViewById(R.id.detail_date)).setText("Date: " + request.getDate());
         ((TextView)view.findViewById(R.id.detail_center)).setText("Center: " + request.getCenterName());
         ((TextView)view.findViewById(R.id.detail_remarks)).setText("Remarks: " + request.getRemarks());
+        ((TextView)view.findViewById(R.id.detail_address)).setText("Address: " + request.getAddress());
         ((TextView)view.findViewById(R.id.detail_status)).setText(request.getStatus());
+
+        android.widget.ImageView ivDetail = view.findViewById(R.id.detail_image);
+        if (ivDetail != null && request.getPhotoUrl() != null && !request.getPhotoUrl().isEmpty()) {
+            ivDetail.setVisibility(View.VISIBLE);
+            my.edu.utar.RecycleGO.utils.ImageManager.loadImage(requireContext(), request.getPhotoUrl(), ivDetail);
+        }
 
         Button btnEdit = view.findViewById(R.id.btn_action_edit);
         Button btnDelete = view.findViewById(R.id.btn_action_delete);
@@ -284,7 +292,30 @@ public class RecycleStatus extends Fragment {
             dialog.dismiss();
         });
 
-        btnAccept.setOnClickListener(v -> { updateStatus(request.getId(), "Accepted"); dialog.dismiss(); });
+        btnAccept.setOnClickListener(v -> {
+            firestoreManager.getUser(userId, new FirestoreManager.OnUserFetchListener() {
+                @Override
+                public void onUserFetched(UserRecord user) {
+                    if (user != null && !user.getJoinedCenters().isEmpty()) {
+                        String centerId = user.getJoinedCenters().get(0); // Use the first joined center
+                        String centerName = user.getRecycleCenter(); // Use the primary center name
+                        firestoreManager.acceptRequest(request.getId(), centerId, centerName, new FirestoreManager.OnTaskCompleteListener() {
+                            @Override
+                            public void onSuccess() {
+                                if (isAdded()) Toast.makeText(getContext(), "Request Accepted!", Toast.LENGTH_SHORT).show();
+                            }
+                            @Override
+                            public void onFailure(String error) {
+                                if (isAdded()) Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }
+                @Override
+                public void onFailure(String error) {}
+            });
+            dialog.dismiss();
+        });
         btnConfirmPickup.setOnClickListener(v -> { updateStatus(request.getId(), "Completed"); dialog.dismiss(); });
         btnDelete.setOnClickListener(v -> { deleteRequest(request.getId()); dialog.dismiss(); });
         

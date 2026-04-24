@@ -1,40 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#FFFFFF">
+    android:background="#F5F7FA">
+
+    <LinearLayout
+        android:id="@+id/manage_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="My Communities"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#1A2A4E" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Manage communities you have created"
+            android:textSize="14sp"
+            android:textColor="#666666" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_manage_communities"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/manage_header"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp" />
 
     <TextView
-        android:layout_width="match_parent"
+        android:id="@+id/tv_no_communities"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Create Community"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#1A2A4E"
-        android:layout_marginBottom="24dp"/>
+        android:layout_centerInParent="true"
+        android:text="No communities created yet"
+        android:visibility="gone" />
 
-    <EditText
-        android:id="@+id/et_comm_name"
-        android:layout_width="match_parent"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_community"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Community Name"
-        android:layout_marginBottom="16dp"/>
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="24dp"
+        android:src="@drawable/baseline_add_24"
+        app:backgroundTint="#008CFF"
+        app:tint="@android:color/white" />
 
-    <EditText
-        android:id="@+id/et_comm_icon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Icon URL (Optional)"
-        android:layout_marginBottom="24dp"/>
-
-    <Button
-        android:id="@+id/btn_save_community"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Save Community"
-        android:backgroundTint="#008CFF"
-        android:textColor="@android:color/white"/>
-
-</LinearLayout>
+</RelativeLayout>
