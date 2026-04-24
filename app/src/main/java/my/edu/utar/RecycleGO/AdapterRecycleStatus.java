@@ -54,6 +54,9 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
         holder.tvDate.setText(request.getDate());
         holder.tvStatus.setText(request.getStatus());
         
+        String centerName = request.getCenterName();
+        holder.tvCenter.setText((centerName == null || centerName.isEmpty()) ? "Pending" : centerName);
+        
         holder.itemView.setOnClickListener(v -> {
             if (actionListener != null) actionListener.onItemClick(request);
         });

@@ -17,9 +17,12 @@ public class RecycleRequest implements java.io.Serializable {
     private String photoUrl; // Added for storing image reference
     private String address;
     private java.util.List<String> targetCenterIds;
-    private Timestamp lastMessageTime;
-    private Timestamp lastReadUser;
-    private Timestamp lastReadAdmin;
+    
+    // Marked as transient because com.google.firebase.Timestamp is not Serializable.
+    // This prevents crashes when passing RecycleRequest through Bundles/Intents.
+    private transient Timestamp lastMessageTime;
+    private transient Timestamp lastReadUser;
+    private transient Timestamp lastReadAdmin;
 
     public RecycleRequest() {
         // Required for Firestore
@@ -32,6 +35,8 @@ public class RecycleRequest implements java.io.Serializable {
         this.contact = contact;
         this.remarks = remarks;
         this.address = "";
+        this.centerId = "";
+        this.centerName = "";
         this.targetCenterIds = new java.util.ArrayList<>();
         this.status = "Requesting";
     }

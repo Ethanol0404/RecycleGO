@@ -46,9 +46,8 @@ public class AdapterDirectChat extends RecyclerView.Adapter<RecyclerView.ViewHol
         DirectMessage msg = messages.get(position);
         if (holder instanceof SentViewHolder) {
             ((SentViewHolder) holder).tvMessage.setText(msg.getMessage());
-        } else {
+        } else if (holder instanceof ReceivedViewHolder) {
             ((ReceivedViewHolder) holder).tvMessage.setText(msg.getMessage());
-            ((ReceivedViewHolder) holder).tvSender.setText(msg.getSenderName());
         }
     }
 
@@ -69,11 +68,10 @@ public class AdapterDirectChat extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     static class ReceivedViewHolder extends RecyclerView.ViewHolder {
-        TextView tvMessage, tvSender;
+        TextView tvMessage;
         ReceivedViewHolder(View v) {
             super(v);
             tvMessage = v.findViewById(R.id.text_message_ai);
-            tvSender = v.findViewById(R.id.welcome_text); // Reusing AI layout but might need tweaking
         }
     }
 }
