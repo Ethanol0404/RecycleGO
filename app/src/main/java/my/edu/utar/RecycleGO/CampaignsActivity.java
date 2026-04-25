@@ -1,5 +1,7 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -57,17 +59,26 @@ public class CampaignsActivity extends Fragment {
         adapter = new CampaignAdapter(campaignList);
         rvCampaigns.setAdapter(adapter);
 
-        // 3. Initialize FAB and set click listener
+        // 3. Initialize FAB and set click listener based on role
         btnAdd = view.findViewById(R.id.community_btnAdd);
+        
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String userRole = prefs.getString("loggedInRole", "User");
+        
         if (btnAdd != null) {
-            btnAdd.setOnClickListener(v -> {
-                if (getActivity() != null) {
-                    getActivity().getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new CreateCampaignActivity())
-                        .addToBackStack(null)
-                        .commit();
-                }
-            });
+            if ("Admin".equalsIgnoreCase(userRole)) {
+                btnAdd.setVisibility(View.VISIBLE);
+                btnAdd.setOnClickListener(v -> {
+                    if (getActivity() != null) {
+                        getActivity().getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new CreateCampaignActivity())
+                            .addToBackStack(null)
+                            .commit();
+                    }
+                });
+            } else {
+                btnAdd.setVisibility(View.GONE);
+            }
         }
 
         // 4. Load Data from Firestore

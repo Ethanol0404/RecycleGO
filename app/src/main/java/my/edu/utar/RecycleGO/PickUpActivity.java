@@ -1,11 +1,13 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view. View;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -27,11 +29,12 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.RecycleCenter;
 import my.edu.utar.RecycleGO.database.RecycleRequest;
-import my.edu.utar.RecycleGO.database.UserRecord;
 import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class PickUpActivity extends Fragment {
@@ -124,7 +127,6 @@ public class PickUpActivity extends Fragment {
         if (getArguments() != null) {
             flow = getArguments().getString("flow", "STATUS_TO_FORM");
             
-            // Handle multiple centers from Map
             if (getArguments().containsKey("selectedCenterIds")) {
                 selectedCenterIds = getArguments().getStringArrayList("selectedCenterIds");
             } else if (getArguments().containsKey("centerId")) {
@@ -143,13 +145,10 @@ public class PickUpActivity extends Fragment {
                 editRequest = (RecycleRequest) getArguments().getSerializable("edit_request");
                 isEditMode = (editRequest != null);
                 
-                // If we just entered edit mode and have no selection yet, load from request
                 if (isEditMode && selectedCenterIds.isEmpty()) {
                     if (editRequest.getTargetCenterIds() != null && !editRequest.getTargetCenterIds().isEmpty()) {
                         selectedCenterIds = new ArrayList<>(editRequest.getTargetCenterIds());
                         selectedCenterNames = new ArrayList<>();
-                        // Note: centerName might be a summary string if multiple. 
-                        // Usually we'd need to fetch full names if they aren't in the request.
                         selectedCenterNames.add(editRequest.getCenterName()); 
                     } else if (editRequest.getCenterId() != null) {
                         selectedCenterIds.add(editRequest.getCenterId());
@@ -164,7 +163,6 @@ public class PickUpActivity extends Fragment {
         Fragment nextFragment = new Map();
         Bundle args = new Bundle();
         
-        // Preserve flow and edit mode
         if (isEditMode) {
             args.putString("flow", "MAP_TO_FORM");
             args.putSerializable("edit_request", editRequest);
@@ -172,7 +170,6 @@ public class PickUpActivity extends Fragment {
             args.putString("flow", "STATUS_TO_FORM");
         }
         
-        // Pass current form data as draft
         args.putString("category", draft.getCategory());
         args.putString("date", draft.getDate());
         args.putString("contact", draft.getContact());
@@ -180,7 +177,6 @@ public class PickUpActivity extends Fragment {
         args.putString("remarks", draft.getRemarks());
         args.putString("userId", draft.getUserId());
         
-        // Pass current selection so Map can highlight them
         args.putStringArrayList("selectedCenterIds", selectedCenterIds);
         
         nextFragment.setArguments(args);
@@ -189,16 +185,6 @@ public class PickUpActivity extends Fragment {
                 .replace(R.id.fragment_container, nextFragment)
                 .addToBackStack(null)
                 .commit();
-    }
-
-    private int calculatePoints(String category, double estimatedWeight) {
-        int basePoints = 0;
-        if (category.contains("Plastic")) basePoints = 10;
-        else if (category.contains("Metal")) basePoints = 15;
-        else if (category.contains("Paper")) basePoints = 5;
-        else if (category.contains("Glass")) basePoints = 8;
-        int weightPoints = (int) (estimatedWeight * 5);
-        return basePoints + weightPoints;
     }
 
     private void submitToFirestore(RecycleRequest request) {
@@ -212,62 +198,17 @@ public class PickUpActivity extends Fragment {
         firestoreManager.submitRequest(request, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                if (isAdded()) addPointsForRecycle(request);
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Request Submitted!", Toast.LENGTH_SHORT).show();
+                    getParentFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new RecycleStatus())
+                            .commit();
+                }
             }
 
             @Override
             public void onFailure(String error) {
                 if (isAdded()) Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void addPointsForRecycle(RecycleRequest request) {
-        if (!isAdded()) return;
-        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
-        String currentUid = prefs.getString("loggedInUid", "");
-
-        if (currentUid.isEmpty()) {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        double estimatedWeight = 2.0; 
-        int earnedPoints = calculatePoints(request.getCategory(), estimatedWeight);
-
-        firestoreManager.addPoints(currentUid, earnedPoints, "Recycle", new FirestoreManager.OnTaskCompleteListener() {
-            @Override
-            public void onSuccess() {
-                if (!isAdded()) return;
-                Toast.makeText(getContext(), "Request Submitted! +" + earnedPoints + " points!", Toast.LENGTH_LONG).show();
-
-                firestoreManager.getUser(currentUid, new FirestoreManager.OnUserFetchListener() {
-                    @Override
-                    public void onUserFetched(UserRecord user) {
-                        if (user != null && isAdded()) {
-                            int newTotal = user.getTotalRecycled() + 1;
-                            java.util.Map<String, Object> updates = new java.util.HashMap<>();
-                            updates.put("totalRecycled", newTotal);
-                            firestoreManager.updateUser(currentUid, updates, null);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(String error) {}
-                });
-
-                getParentFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new RecycleStatus())
-                        .commit();
-            }
-
-            @Override
-            public void onFailure(String error) {
-                if (!isAdded()) return;
-                Toast.makeText(getContext(), "Points update failed: " + error, Toast.LENGTH_SHORT).show();
-                getParentFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new RecycleStatus())
-                        .commit();
             }
         });
     }
@@ -338,26 +279,46 @@ public class PickUpActivity extends Fragment {
                     }).show();
         });
 
-        String[] categories = {"Plastic", "Metal", "Paper", "Glass", "Others"};
-        boolean[] checkedItems = new boolean[categories.length];
-
         etCategory.setOnClickListener(v -> {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("Select Categories")
-                    .setMultiChoiceItems(categories, checkedItems, (dialog, which, isChecked) -> {
-                        checkedItems[which] = isChecked;
-                    })
-                    .setPositiveButton("OK", (dialog, which) -> {
-                        StringBuilder builder = new StringBuilder();
-                        for (int i = 0; i < categories.length; i++) {
-                            if (checkedItems[i]) {
-                                if (builder.length() > 0) builder.append(", ");
-                                builder.append(categories[i]);
+            if (selectedCenterIds.isEmpty()) {
+                Toast.makeText(getContext(), "Please select a target center first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Fetch the first selected center to get its supported services
+            firestoreManager.getCentersCollection().document(selectedCenterIds.get(0)).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        RecycleCenter center = documentSnapshot.toObject(RecycleCenter.class);
+                        if (center != null && center.supportedServices != null) {
+                            String[] services = center.supportedServices.split(",\\s*");
+                            boolean[] checkedItems = new boolean[services.length];
+                            
+                            // Maintain selection if already set
+                            String currentCategory = etCategory.getText().toString();
+                            for(int i=0; i<services.length; i++) {
+                                if(currentCategory.contains(services[i])) checkedItems[i] = true;
                             }
+
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle("Select Service")
+                                    .setMultiChoiceItems(services, checkedItems, (dialog, which, isChecked) -> {
+                                        checkedItems[which] = isChecked;
+                                    })
+                                    .setPositiveButton("OK", (dialog, which) -> {
+                                        StringBuilder builder = new StringBuilder();
+                                        for (int i = 0; i < services.length; i++) {
+                                            if (checkedItems[i]) {
+                                                if (builder.length() > 0) builder.append(", ");
+                                                builder.append(services[i]);
+                                            }
+                                        }
+                                        etCategory.setText(builder.toString());
+                                    })
+                                    .show();
+                        } else {
+                            Toast.makeText(getContext(), "No services listed for this center", Toast.LENGTH_SHORT).show();
                         }
-                        etCategory.setText(builder.toString());
-                    })
-                    .show();
+                    });
         });
 
         etDate.setOnClickListener(v -> {

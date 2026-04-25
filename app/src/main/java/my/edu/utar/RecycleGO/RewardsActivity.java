@@ -19,23 +19,22 @@ import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
-import my.edu.utar.RecycleGO.database.RecycleRequest;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class RewardsActivity extends Fragment {
 
-    private TextView txtPoints, txtUserName, txtTreesSaved, txtUserLevel;
+    private TextView txtPoints, txtTreesSaved;
     private PieChart pieChart;
-    private Button btnHistory;
+    private Button btnHistory, btnRedeem;
     
     // Ranking views
     private TextView txtRank1Name, txtRank1Points;
@@ -59,11 +58,10 @@ public class RewardsActivity extends Fragment {
 
         // Initialize views
         txtPoints = view.findViewById(R.id.txt_points);
-        txtUserName = view.findViewById(R.id.txt_user_name);
-        txtUserLevel = view.findViewById(R.id.txt_user_level);
         txtTreesSaved = view.findViewById(R.id.txt_trees_saved);
         pieChart = view.findViewById(R.id.pieChart);
         btnHistory = view.findViewById(R.id.btn_history);
+        btnRedeem = view.findViewById(R.id.btn_redeem);
 
         txtRank1Name = view.findViewById(R.id.txt_rank1_name);
         txtRank1Points = view.findViewById(R.id.txt_rank1_points);
@@ -97,6 +95,7 @@ public class RewardsActivity extends Fragment {
     }
 
     private void setupPieChart() {
+        if (pieChart == null) return;
         pieChart.setUsePercentValues(true);
         pieChart.getDescription().setEnabled(false);
         pieChart.setExtraOffsets(5, 10, 5, 5);
@@ -104,8 +103,15 @@ public class RewardsActivity extends Fragment {
         pieChart.setDrawHoleEnabled(true);
         pieChart.setHoleColor(Color.WHITE);
         pieChart.setTransparentCircleRadius(61f);
+        
+        // Disable labels by default to only show on tap
+        pieChart.setDrawEntryLabels(false);
         pieChart.setEntryLabelColor(Color.BLACK);
         pieChart.setEntryLabelTextSize(12f);
+
+        // Legend configuration
+        pieChart.getLegend().setEnabled(true);
+        pieChart.getLegend().setWordWrapEnabled(true);
     }
 
     @Override
@@ -130,24 +136,19 @@ public class RewardsActivity extends Fragment {
             @Override
             public void onUserFetched(UserRecord userRecord) {
                 if (userRecord != null && isAdded()) {
-                    txtUserName.setText(userRecord.getUsername());
-                    txtPoints.setText(String.valueOf(userRecord.getPoints()));
-                    txtCurrentUserNameRank.setText(userRecord.getUsername());
-                    txtCurrentUserPoints.setText(String.valueOf(userRecord.getPoints()));
-                    
-                    if (userRecord.getPoints() > 5000) txtUserLevel.setText("GOLD");
-                    else if (userRecord.getPoints() > 2000) txtUserLevel.setText("SILVER");
-                    else txtUserLevel.setText("BRONZE");
+                    if (txtPoints != null) txtPoints.setText(String.valueOf(userRecord.getPoints()));
+                    if (txtCurrentUserNameRank != null) txtCurrentUserNameRank.setText(userRecord.getUsername());
+                    if (txtCurrentUserPoints != null) txtCurrentUserPoints.setText(String.valueOf(userRecord.getPoints()));
                 }
             }
             @Override
             public void onFailure(String error) {}
         });
 
-        firestoreManager.getCompletedRequestsByUser(currentUserId, new FirestoreManager.OnListFetchListener<RecycleRequest>() {
+        firestoreManager.getMaterialStats(currentUserId, new FirestoreManager.OnMaterialStatsFetchListener() {
             @Override
-            public void onListFetched(List<RecycleRequest> list) {
-                if (isAdded()) updatePieChartAndTrees(list);
+            public void onStatsFetched(List<String> materials, List<Long> counts) {
+                if (isAdded()) updatePieChartAndTrees(materials, counts);
             }
             @Override
             public void onFailure(String error) {}
@@ -163,67 +164,136 @@ public class RewardsActivity extends Fragment {
         });
     }
 
-    private void updatePieChartAndTrees(List<RecycleRequest> list) {
-        Map<String, Integer> categoryCount = new HashMap<>();
-        int totalTrees = 0;
-
-        for (RecycleRequest req : list) {
-            String fullCat = req.getCategory();
-            if (fullCat == null) continue;
-
-            String[] cats = fullCat.split(",\\s*");
-            for (String cat : cats) {
-                categoryCount.put(cat, categoryCount.getOrDefault(cat, 0) + 1);
-
-                if (cat.equalsIgnoreCase("Plastic")) totalTrees += 10;
-                else if (cat.equalsIgnoreCase("Paper")) totalTrees += 20;
-                else totalTrees += 5;
-            }
-        }
-
-        txtTreesSaved.setText("You save " + totalTrees + " Trees!");
-
+    private void updatePieChartAndTrees(List<String> materials, List<Long> counts) {
+        long totalTrees = 0;
         List<PieEntry> entries = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : categoryCount.entrySet()) {
-            entries.add(new PieEntry(entry.getValue(), entry.getKey()));
+        List<Integer> colors = new ArrayList<>();
+
+        if (materials != null && !materials.isEmpty()) {
+            for (int i = 0; i < materials.size(); i++) {
+                String material = materials.get(i);
+                long count = counts.get(i);
+
+                entries.add(new PieEntry(count, material));
+
+                // Logic for tree counting and specific colors
+                if (material.equalsIgnoreCase("Plastic")) {
+                    totalTrees += count * 10;
+                    colors.add(Color.parseColor("#2196F3")); // Blue
+                } else if (material.equalsIgnoreCase("Paper")) {
+                    totalTrees += count * 5;
+                    colors.add(Color.parseColor("#FFEB3B")); // Yellow
+                } else if (material.equalsIgnoreCase("Metal")) {
+                    totalTrees += count * 8;
+                    colors.add(Color.parseColor("#9E9E9E")); // Grey
+                } else if (material.equalsIgnoreCase("E-Waste")) {
+                    totalTrees += count * 15;
+                    colors.add(Color.parseColor("#9C27B0")); // Purple
+                } else if (material.equalsIgnoreCase("Clothing") || material.equalsIgnoreCase("Textile")) {
+                    totalTrees += count * 4;
+                    colors.add(Color.parseColor("#795548")); // Brown
+                } else if (material.equalsIgnoreCase("Household Waste")) {
+                    totalTrees += count * 2;
+                    colors.add(Color.parseColor("#4CAF50")); // Green
+                } else {
+                    totalTrees += count * 2;
+                    colors.add(ColorTemplate.JOYFUL_COLORS[i % ColorTemplate.JOYFUL_COLORS.length]);
+                }
+            }
+        } else {
+            // If no data, show an empty placeholder slice
+            entries.add(new PieEntry(1f, "No Data"));
+            colors.add(Color.LTGRAY);
         }
 
-        PieDataSet dataSet = new PieDataSet(entries, "Recycling Distribution");
+        if (txtTreesSaved != null) {
+            txtTreesSaved.setText("You save " + totalTrees + " Trees!");
+        }
+
+        if (pieChart == null) return;
+
+        PieDataSet dataSet = new PieDataSet(entries, "");
         dataSet.setSliceSpace(3f);
-        dataSet.setSelectionShift(5f);
-        dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+        dataSet.setSelectionShift(8f);
+        dataSet.setColors(colors);
+        
+        // Setup line position but hide by default
+        dataSet.setDrawValues(false);
+        dataSet.setValueLinePart1OffsetPercentage(80f);
+        dataSet.setValueLinePart1Length(0.2f);
+        dataSet.setValueLinePart2Length(0.4f);
+        dataSet.setYValuePosition(PieDataSet.ValuePosition.OUTSIDE_SLICE);
 
         PieData data = new PieData(dataSet);
-        data.setValueTextSize(12f);
+        data.setValueFormatter(new PercentFormatter(pieChart));
+        data.setValueTextSize(spToPx(12));
         data.setValueTextColor(Color.BLACK);
 
         pieChart.setData(data);
+        
+        // Hide labels and values initially
+        pieChart.setDrawEntryLabels(false);
+        dataSet.setDrawValues(false); 
+        
+        pieChart.setOnChartValueSelectedListener(new com.github.mikephil.charting.listener.OnChartValueSelectedListener() {
+            @Override
+            public void onValueSelected(com.github.mikephil.charting.data.Entry e, com.github.mikephil.charting.highlight.Highlight h) {
+                if (e instanceof PieEntry) {
+                    PieEntry pe = (PieEntry) e;
+                    if (pe.getLabel().equals("No Data")) {
+                        pieChart.setCenterText("No recycling data");
+                        return;
+                    }
+                    float total = pieChart.getData().getYValueSum();
+                    float percentage = (pe.getValue() / total) * 100f;
+                    
+                    String centerText = pe.getLabel() + "\n" + 
+                                     String.format(Locale.getDefault(), "%.1f%%", percentage) + "\n" +
+                                     (int)pe.getValue() + " items";
+                    
+                    pieChart.setCenterText(centerText);
+                    pieChart.setCenterTextSize(14f);
+                }
+            }
+
+            @Override
+            public void onNothingSelected() {
+                pieChart.setCenterText("");
+            }
+        });
+
         pieChart.invalidate();
+    }
+    
+    private float spToPx(int sp) {
+        return sp * getResources().getDisplayMetrics().scaledDensity;
     }
 
     private void updateRanking(List<UserRecord> list) {
-        if (list.size() >= 1) {
+        if (list.size() >= 1 && txtRank1Name != null && txtRank1Points != null) {
             txtRank1Name.setText(list.get(0).getUsername());
             txtRank1Points.setText(String.valueOf(list.get(0).getPoints()));
         }
-        if (list.size() >= 2) {
+        if (list.size() >= 2 && txtRank2Name != null && txtRank2Points != null) {
             txtRank2Name.setText(list.get(1).getUsername());
             txtRank2Points.setText(String.valueOf(list.get(1).getPoints()));
         }
-        if (list.size() >= 3) {
+        if (list.size() >= 3 && txtRank3Name != null && txtRank3Points != null) {
             txtRank3Name.setText(list.get(2).getUsername());
             txtRank3Points.setText(String.valueOf(list.get(2).getPoints()));
         }
 
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).getUid().equals(currentUserId)) {
-                int rank = i + 1;
-                String suffix = "th";
-                if (rank == 1) suffix = "st";
-                else if (rank == 2) suffix = "nd";
-                else if (rank == 3) suffix = "rd";
-                txtCurrentRank.setText(rank + suffix);
-                break;
+        if (txtCurrentRank != null) {
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).getUid().equals(currentUserId)) {
+                    int rank = i + 1;
+                    String suffix = "th";
+                    if (rank == 1) suffix = "st";
+                    else if (rank == 2) suffix = "nd";
+                    else if (rank == 3) suffix = "rd";
+                    txtCurrentRank.setText(rank + suffix);
+                    break;
+                }
             }
         }
     }

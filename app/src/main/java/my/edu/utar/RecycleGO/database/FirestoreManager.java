@@ -24,6 +24,7 @@ public class FirestoreManager {
     private static final String COLLECTION_CAMPAIGNS = "campaigns";
     private static final String COLLECTION_POINT_RECORDS = "point_record";
     private static final String COLLECTION_QUIZ_RECORDS = "quiz_records";
+    private static final String COLLECTION_RECYCLE_MATERIAL = "recycle_material";
 
     public FirestoreManager() {
         this.db = FirebaseFirestore.getInstance();
@@ -43,6 +44,13 @@ public class FirestoreManager {
 
     public void createCampaign(CampaignRecord campaign, OnTaskCompleteListener listener) {
         db.collection(COLLECTION_CAMPAIGNS).document(campaign.getId()).set(campaign)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void joinCampaign(String campaignId, String userId, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_CAMPAIGNS).document(campaignId)
+                .update("participants", FieldValue.arrayUnion(userId))
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
@@ -463,6 +471,55 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
+    // ==================== Material Stats ====================
+    public void incrementMaterialCount(String userId, String category, OnTaskCompleteListener listener) {
+        DocumentReference ref = db.collection(COLLECTION_RECYCLE_MATERIAL).document(userId);
+        ref.get().addOnSuccessListener(doc -> {
+            List<String> materials = new ArrayList<>();
+            List<Long> counts = new ArrayList<>();
+
+            if (doc.exists()) {
+                materials = (List<String>) doc.get("materials");
+                counts = (List<Long>) doc.get("counts");
+            }
+            if (materials == null) materials = new ArrayList<>();
+            if (counts == null) counts = new ArrayList<>();
+
+            int index = materials.indexOf(category);
+            if (index != -1) {
+                counts.set(index, counts.get(index) + 1);
+            } else {
+                materials.add(category);
+                counts.add(1L);
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("userId", userId);
+            data.put("materials", materials);
+            data.put("counts", counts);
+
+            ref.set(data)
+                    .addOnSuccessListener(aVoid -> { if (listener != null) listener.onSuccess(); })
+                    .addOnFailureListener(e -> { if (listener != null) listener.onFailure(e.getMessage()); });
+        }).addOnFailureListener(e -> {
+            if (listener != null) listener.onFailure(e.getMessage());
+        });
+    }
+
+    public void getMaterialStats(String userId, OnMaterialStatsFetchListener listener) {
+        db.collection(COLLECTION_RECYCLE_MATERIAL).document(userId).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        List<String> materials = (List<String>) doc.get("materials");
+                        List<Long> counts = (List<Long>) doc.get("counts");
+                        listener.onStatsFetched(materials, counts);
+                    } else {
+                        listener.onStatsFetched(new ArrayList<>(), new ArrayList<>());
+                    }
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     // ==================== Callback Interfaces ====================
     public interface OnTaskCompleteListener {
         void onSuccess();
@@ -486,6 +543,11 @@ public class FirestoreManager {
 
     public interface OnPointsHistoryFetchListener {
         void onHistoryFetched(List<String> activities, List<Long> points, List<Timestamp> timestamps);
+        void onFailure(String error);
+    }
+
+    public interface OnMaterialStatsFetchListener {
+        void onStatsFetched(List<String> materials, List<Long> counts);
         void onFailure(String error);
     }
 }

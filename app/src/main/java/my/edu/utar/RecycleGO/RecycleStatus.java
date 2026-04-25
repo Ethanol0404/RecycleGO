@@ -462,7 +462,7 @@ public class RecycleStatus extends Fragment {
         // Point scoring only for regular users (if needed)
         // Since you want to remove it for Admin, I'm ensuring we check userRole or just omit it.
         if (!"Admin".equalsIgnoreCase(userRole)) {
-            firestoreManager.addPoints(userId, 50, "Verified Recycle", new FirestoreManager.OnTaskCompleteListener() {
+            firestoreManager.addPoints(userId, 50, "Recycle", new FirestoreManager.OnTaskCompleteListener() {
                 @Override
                 public void onSuccess() {
                     if (isAdded()) Toast.makeText(getContext(), "Points earned! +50", Toast.LENGTH_LONG).show();
@@ -470,6 +470,15 @@ public class RecycleStatus extends Fragment {
                 @Override
                 public void onFailure(String error) {}
             });
+
+            // Count materials
+            String categories = request.getCategory();
+            if (categories != null && !categories.isEmpty()) {
+                String[] cats = categories.split(",\\s*");
+                for (String cat : cats) {
+                    firestoreManager.incrementMaterialCount(userId, cat, null);
+                }
+            }
         }
     }
 
