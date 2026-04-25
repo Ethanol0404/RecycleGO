@@ -139,6 +139,7 @@ public class CommunityAdminFragment extends Fragment {
             builder.setTitle("Edit Community");
             etName.setText(existing.getName());
             etIcon.setText(existing.getIconUrl());
+            // Load existing icon into preview
             my.edu.utar.RecycleGO.utils.ImageManager.loadImage(requireContext(), existing.getIconUrl(), dialogIconPreview);
         } else {
             builder.setTitle("New Community");
