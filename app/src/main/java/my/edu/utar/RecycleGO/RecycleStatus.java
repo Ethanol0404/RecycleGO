@@ -13,7 +13,6 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -370,9 +369,6 @@ public class RecycleStatus extends Fragment {
                     if (user != null && !user.getJoinedCenters().isEmpty()) {
                         String centerId = user.getJoinedCenters().get(0);
                         String centerName = user.getRecycleCenter();
-                        if (centerName == null || centerName.trim().isEmpty()) {
-                            centerName = "Center ID: " + centerId.substring(0, Math.min(8, centerId.length()));
-                        }
                         firestoreManager.acceptRequest(request.getId(), centerId, centerName, new FirestoreManager.OnTaskCompleteListener() {
                             @Override
                             public void onSuccess() {
