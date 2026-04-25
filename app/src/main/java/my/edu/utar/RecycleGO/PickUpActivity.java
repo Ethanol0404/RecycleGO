@@ -283,7 +283,7 @@ public class PickUpActivity extends Fragment {
                     }).show();
         });
 
-        String[] categories = {"Plastic", "Metal", "Paper", "Glass", "Others"};
+        String[] categories = {"Plastic", "Metal", "Paper", "Glass", "E-Waste", "Clothing", "Household Waste", "Textile", "Others"};
         boolean[] checkedItems = new boolean[categories.length];
 
         etCategory.setOnClickListener(v -> {

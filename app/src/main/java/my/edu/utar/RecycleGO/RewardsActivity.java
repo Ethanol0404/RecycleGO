@@ -23,12 +23,9 @@ import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
-import my.edu.utar.RecycleGO.database.RecycleRequest;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class RewardsActivity extends Fragment {
@@ -150,10 +147,10 @@ public class RewardsActivity extends Fragment {
             public void onFailure(String error) {}
         });
 
-        firestoreManager.getCompletedRequestsByUser(currentUserId, new FirestoreManager.OnListFetchListener<RecycleRequest>() {
+        firestoreManager.getMaterialStats(currentUserId, new FirestoreManager.OnMaterialStatsFetchListener() {
             @Override
-            public void onListFetched(List<RecycleRequest> list) {
-                if (isAdded()) updatePieChartAndTrees(list);
+            public void onStatsFetched(List<String> materials, List<Long> counts) {
+                if (isAdded()) updatePieChartAndTrees(materials, counts);
             }
             @Override
             public void onFailure(String error) {}
@@ -169,21 +166,26 @@ public class RewardsActivity extends Fragment {
         });
     }
 
-    private void updatePieChartAndTrees(List<RecycleRequest> list) {
-        Map<String, Integer> categoryCount = new HashMap<>();
-        int totalTrees = 0;
+    private void updatePieChartAndTrees(List<String> materials, List<Long> counts) {
+        long totalTrees = 0;
+        List<PieEntry> entries = new ArrayList<>();
 
-        for (RecycleRequest req : list) {
-            String fullCat = req.getCategory();
-            if (fullCat == null) continue;
+        for (int i = 0; i < materials.size(); i++) {
+            String material = materials.get(i);
+            long count = counts.get(i);
 
-            String[] cats = fullCat.split(",\\s*");
-            for (String cat : cats) {
-                categoryCount.put(cat, categoryCount.getOrDefault(cat, 0) + 1);
+            entries.add(new PieEntry(count, material));
 
-                if (cat.equalsIgnoreCase("Plastic")) totalTrees += 10;
-                else if (cat.equalsIgnoreCase("Paper")) totalTrees += 20;
-                else totalTrees += 5;
+            if (material.equalsIgnoreCase("Plastic")) {
+                totalTrees += count * 10;
+            } else if (material.equalsIgnoreCase("Paper")) {
+                totalTrees += count * 5;
+            } else if (material.equalsIgnoreCase("Metal")) {
+                totalTrees += count * 5;
+            } else if (material.equalsIgnoreCase("Paper")) {
+                totalTrees += count * 5;
+            } else {
+                totalTrees += count * 2;
             }
         }
 
@@ -191,14 +193,7 @@ public class RewardsActivity extends Fragment {
             txtTreesSaved.setText("You save " + totalTrees + " Trees!");
         }
 
-        if (pieChart == null) return;
-
-        List<PieEntry> entries = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : categoryCount.entrySet()) {
-            entries.add(new PieEntry(entry.getValue(), entry.getKey()));
-        }
-
-        if (entries.isEmpty()) return;
+        if (pieChart == null || entries.isEmpty()) return;
 
         PieDataSet dataSet = new PieDataSet(entries, "Recycling Distribution");
         dataSet.setSliceSpace(3f);

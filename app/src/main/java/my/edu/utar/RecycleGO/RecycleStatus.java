@@ -470,6 +470,15 @@ public class RecycleStatus extends Fragment {
                 @Override
                 public void onFailure(String error) {}
             });
+
+            // Count materials
+            String categories = request.getCategory();
+            if (categories != null && !categories.isEmpty()) {
+                String[] cats = categories.split(",\\s*");
+                for (String cat : cats) {
+                    firestoreManager.incrementMaterialCount(userId, cat, null);
+                }
+            }
         }
     }
 
