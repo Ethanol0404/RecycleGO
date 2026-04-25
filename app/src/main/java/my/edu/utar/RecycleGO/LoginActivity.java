@@ -3,6 +3,7 @@ package my.edu.utar.RecycleGO;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -16,16 +17,19 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class LoginActivity extends AppCompatActivity {
 
+    private static final String TAG = "LoginActivity";
     Button btnLogin, btnCreateAccount;
-    EditText etLoginEmail;
-    EditText etLoginPassword;
+    EditText etLoginEmail, etLoginPassword;
     Spinner spinnerRole;
     FirestoreManager firestoreManager;
+    FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +43,7 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         firestoreManager = new FirestoreManager();
+        mAuth = FirebaseAuth.getInstance();
 
         // Initialize views
         btnLogin = findViewById(R.id.btnLogin);
@@ -57,8 +62,8 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String email = etLoginEmail.getText().toString();
-                String password = etLoginPassword.getText().toString();
+                String email = etLoginEmail.getText().toString().trim();
+                String password = etLoginPassword.getText().toString().trim();
                 String role = spinnerRole.getSelectedItem().toString();
 
                 if (email.isEmpty() || password.isEmpty()) {
@@ -66,34 +71,46 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
 
-                firestoreManager.signIn(email, password, role, new FirestoreManager.OnUserFetchListener() {
-                    @Override
-                    public void onUserFetched(UserRecord user) {
-                        if (user != null) {
-                            // Save user info to SharedPreferences
-                            SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                            SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.putString("loggedInEmail", email);
-                            editor.putString("loggedInUid", user.getUid());
-                            editor.putString("loggedInUsername", user.getUsername());
-                            editor.putString("loggedInRole", role); // Saved Role
-                            editor.apply();
+                // Authenticate with Firebase Auth first
+                mAuth.signInWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            // Auth successful, now check role in Firestore
+                            firestoreManager.getUser(mAuth.getCurrentUser().getUid(), new FirestoreManager.OnUserFetchListener() {
+                                @Override
+                                public void onUserFetched(UserRecord user) {
+                                    if (user != null && user.getRole().equalsIgnoreCase(role)) {
+                                        // Save user info to SharedPreferences
+                                        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                                        editor.putString("loggedInEmail", email);
+                                        editor.putString("loggedInUid", user.getUid());
+                                        editor.putString("loggedInUsername", user.getUsername());
+                                        editor.putString("loggedInRole", user.getRole());
+                                        editor.apply();
 
-                            Toast.makeText(LoginActivity.this, "Login Successful as " + role, Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(LoginActivity.this, "Login Successful as " + user.getRole(), Toast.LENGTH_SHORT).show();
 
-                            Intent intent = new Intent(LoginActivity.this, FrameActivity.class);
-                            startActivity(intent);
-                            finish();
+                                        Intent intent = new Intent(LoginActivity.this, FrameActivity.class);
+                                        startActivity(intent);
+                                        finish();
+                                    } else {
+                                        mAuth.signOut();
+                                        Toast.makeText(LoginActivity.this, "Role mismatch or user not found", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(String error) {
+                                    mAuth.signOut();
+                                    Toast.makeText(LoginActivity.this, "Firestore Error: " + error, Toast.LENGTH_SHORT).show();
+                                }
+                            });
                         } else {
-                            Toast.makeText(LoginActivity.this, "Invalid credentials or role", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Auth Failed", task.getException());
+                            Toast.makeText(LoginActivity.this, "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
-                    }
-
-                    @Override
-                    public void onFailure(String error) {
-                        Toast.makeText(LoginActivity.this, "Login Error: " + error, Toast.LENGTH_SHORT).show();
-                    }
-                });
+                    });
             }
         });
 
@@ -105,6 +122,5 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
     }
 }

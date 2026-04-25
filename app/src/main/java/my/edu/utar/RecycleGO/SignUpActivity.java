@@ -2,6 +2,7 @@ package my.edu.utar.RecycleGO;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -18,11 +19,17 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
+
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class SignUpActivity extends AppCompatActivity {
 
+    private static final String TAG = "SignUpActivity";
     EditText etUsername, etEmail, etPassword, etRetypePassword, etRecycleCenter;
     Spinner spinnerSignUpRole;
     Button btnSignUp;
@@ -116,6 +123,11 @@ public class SignUpActivity extends AppCompatActivity {
                 return;
             }
 
+            if (password.length() < 6) {
+                Toast.makeText(SignUpActivity.this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             // Register with Firebase Auth
             mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
@@ -144,7 +156,24 @@ public class SignUpActivity extends AppCompatActivity {
                             }
                         });
                     } else {
-                        Toast.makeText(SignUpActivity.this, "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        String errorMessage = "Auth Failed";
+                        if (task.getException() != null) {
+                            errorMessage = task.getException().getMessage();
+                            if (task.getException() instanceof FirebaseAuthWeakPasswordException) {
+                                errorMessage = "Weak password. Use at least 6 characters.";
+                            } else if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                                errorMessage = "Invalid email format.";
+                            } else if (task.getException() instanceof FirebaseAuthUserCollisionException) {
+                                errorMessage = "Email already in use.";
+                            } else if (task.getException() instanceof FirebaseAuthException) {
+                                String errorCode = ((FirebaseAuthException) task.getException()).getErrorCode();
+                                if (errorCode.equals("ERROR_OPERATION_NOT_ALLOWED")) {
+                                    errorMessage = "Email/Password sign-in is not enabled in Firebase Console.";
+                                }
+                            }
+                            Log.e(TAG, "Auth Error: ", task.getException());
+                        }
+                        Toast.makeText(SignUpActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                     }
                 });
         });

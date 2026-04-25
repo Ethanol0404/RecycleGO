@@ -33,9 +33,9 @@ import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class RewardsActivity extends Fragment {
 
-    private TextView txtPoints, txtUserName, txtTreesSaved, txtUserLevel;
+    private TextView txtPoints, txtTreesSaved;
     private PieChart pieChart;
-    private Button btnHistory;
+    private Button btnHistory, btnRedeem;
     
     // Ranking views
     private TextView txtRank1Name, txtRank1Points;
@@ -59,11 +59,10 @@ public class RewardsActivity extends Fragment {
 
         // Initialize views
         txtPoints = view.findViewById(R.id.txt_points);
-        txtUserName = view.findViewById(R.id.txt_user_name);
-        txtUserLevel = view.findViewById(R.id.txt_user_level);
         txtTreesSaved = view.findViewById(R.id.txt_trees_saved);
         pieChart = view.findViewById(R.id.pieChart);
         btnHistory = view.findViewById(R.id.btn_history);
+        btnRedeem = view.findViewById(R.id.btn_redeem);
 
         txtRank1Name = view.findViewById(R.id.txt_rank1_name);
         txtRank1Points = view.findViewById(R.id.txt_rank1_points);
@@ -91,12 +90,24 @@ public class RewardsActivity extends Fragment {
             });
         }
 
+        if (btnRedeem != null) {
+            btnRedeem.setOnClickListener(v -> {
+                // Link to Redemption activity or fragment if it exists
+                // Fragment nextFragment = new RedemptionFragment();
+                // getParentFragmentManager().beginTransaction()
+                //         .replace(R.id.fragment_container, nextFragment)
+                //         .addToBackStack(null)
+                //         .commit();
+            });
+        }
+
         setupPieChart();
 
         return view;
     }
 
     private void setupPieChart() {
+        if (pieChart == null) return;
         pieChart.setUsePercentValues(true);
         pieChart.getDescription().setEnabled(false);
         pieChart.setExtraOffsets(5, 10, 5, 5);
@@ -130,14 +141,9 @@ public class RewardsActivity extends Fragment {
             @Override
             public void onUserFetched(UserRecord userRecord) {
                 if (userRecord != null && isAdded()) {
-                    txtUserName.setText(userRecord.getUsername());
-                    txtPoints.setText(String.valueOf(userRecord.getPoints()));
-                    txtCurrentUserNameRank.setText(userRecord.getUsername());
-                    txtCurrentUserPoints.setText(String.valueOf(userRecord.getPoints()));
-                    
-                    if (userRecord.getPoints() > 5000) txtUserLevel.setText("GOLD");
-                    else if (userRecord.getPoints() > 2000) txtUserLevel.setText("SILVER");
-                    else txtUserLevel.setText("BRONZE");
+                    if (txtPoints != null) txtPoints.setText(String.valueOf(userRecord.getPoints()));
+                    if (txtCurrentUserNameRank != null) txtCurrentUserNameRank.setText(userRecord.getUsername());
+                    if (txtCurrentUserPoints != null) txtCurrentUserPoints.setText(String.valueOf(userRecord.getPoints()));
                 }
             }
             @Override
@@ -181,12 +187,18 @@ public class RewardsActivity extends Fragment {
             }
         }
 
-        txtTreesSaved.setText("You save " + totalTrees + " Trees!");
+        if (txtTreesSaved != null) {
+            txtTreesSaved.setText("You save " + totalTrees + " Trees!");
+        }
+
+        if (pieChart == null) return;
 
         List<PieEntry> entries = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : categoryCount.entrySet()) {
             entries.add(new PieEntry(entry.getValue(), entry.getKey()));
         }
+
+        if (entries.isEmpty()) return;
 
         PieDataSet dataSet = new PieDataSet(entries, "Recycling Distribution");
         dataSet.setSliceSpace(3f);
@@ -202,28 +214,30 @@ public class RewardsActivity extends Fragment {
     }
 
     private void updateRanking(List<UserRecord> list) {
-        if (list.size() >= 1) {
+        if (list.size() >= 1 && txtRank1Name != null && txtRank1Points != null) {
             txtRank1Name.setText(list.get(0).getUsername());
             txtRank1Points.setText(String.valueOf(list.get(0).getPoints()));
         }
-        if (list.size() >= 2) {
+        if (list.size() >= 2 && txtRank2Name != null && txtRank2Points != null) {
             txtRank2Name.setText(list.get(1).getUsername());
             txtRank2Points.setText(String.valueOf(list.get(1).getPoints()));
         }
-        if (list.size() >= 3) {
+        if (list.size() >= 3 && txtRank3Name != null && txtRank3Points != null) {
             txtRank3Name.setText(list.get(2).getUsername());
             txtRank3Points.setText(String.valueOf(list.get(2).getPoints()));
         }
 
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).getUid().equals(currentUserId)) {
-                int rank = i + 1;
-                String suffix = "th";
-                if (rank == 1) suffix = "st";
-                else if (rank == 2) suffix = "nd";
-                else if (rank == 3) suffix = "rd";
-                txtCurrentRank.setText(rank + suffix);
-                break;
+        if (txtCurrentRank != null) {
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).getUid().equals(currentUserId)) {
+                    int rank = i + 1;
+                    String suffix = "th";
+                    if (rank == 1) suffix = "st";
+                    else if (rank == 2) suffix = "nd";
+                    else if (rank == 3) suffix = "rd";
+                    txtCurrentRank.setText(rank + suffix);
+                    break;
+                }
             }
         }
     }

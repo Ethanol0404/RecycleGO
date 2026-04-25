@@ -191,16 +191,6 @@ public class PickUpActivity extends Fragment {
                 .commit();
     }
 
-    private int calculatePoints(String category, double estimatedWeight) {
-        int basePoints = 0;
-        if (category.contains("Plastic")) basePoints = 10;
-        else if (category.contains("Metal")) basePoints = 15;
-        else if (category.contains("Paper")) basePoints = 5;
-        else if (category.contains("Glass")) basePoints = 8;
-        int weightPoints = (int) (estimatedWeight * 5);
-        return basePoints + weightPoints;
-    }
-
     private void submitToFirestore(RecycleRequest request) {
         request.setStatus("Requesting");
 
@@ -212,62 +202,17 @@ public class PickUpActivity extends Fragment {
         firestoreManager.submitRequest(request, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                if (isAdded()) addPointsForRecycle(request);
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Request Submitted!", Toast.LENGTH_SHORT).show();
+                    getParentFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new RecycleStatus())
+                            .commit();
+                }
             }
 
             @Override
             public void onFailure(String error) {
                 if (isAdded()) Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void addPointsForRecycle(RecycleRequest request) {
-        if (!isAdded()) return;
-        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
-        String currentUid = prefs.getString("loggedInUid", "");
-
-        if (currentUid.isEmpty()) {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        double estimatedWeight = 2.0; 
-        int earnedPoints = calculatePoints(request.getCategory(), estimatedWeight);
-
-        firestoreManager.addPoints(currentUid, earnedPoints, "Recycle", new FirestoreManager.OnTaskCompleteListener() {
-            @Override
-            public void onSuccess() {
-                if (!isAdded()) return;
-                Toast.makeText(getContext(), "Request Submitted! +" + earnedPoints + " points!", Toast.LENGTH_LONG).show();
-
-                firestoreManager.getUser(currentUid, new FirestoreManager.OnUserFetchListener() {
-                    @Override
-                    public void onUserFetched(UserRecord user) {
-                        if (user != null && isAdded()) {
-                            int newTotal = user.getTotalRecycled() + 1;
-                            java.util.Map<String, Object> updates = new java.util.HashMap<>();
-                            updates.put("totalRecycled", newTotal);
-                            firestoreManager.updateUser(currentUid, updates, null);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(String error) {}
-                });
-
-                getParentFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new RecycleStatus())
-                        .commit();
-            }
-
-            @Override
-            public void onFailure(String error) {
-                if (!isAdded()) return;
-                Toast.makeText(getContext(), "Points update failed: " + error, Toast.LENGTH_SHORT).show();
-                getParentFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new RecycleStatus())
-                        .commit();
             }
         });
     }
