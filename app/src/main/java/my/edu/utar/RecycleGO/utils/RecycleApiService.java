@@ -5,8 +5,7 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 
 public interface RecycleApiService {
-    
-    // Updated to point to your specific JSON file on GitHub
+
     @GET("recycle_tips.json")
     Call<List<RecycleTip>> getRecyclingTips();
 

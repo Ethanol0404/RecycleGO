@@ -5,6 +5,7 @@ public class CommunityComment {
     private String postID;
     private String authorName;
     private String text;
+    private String photoUrl; // Added photo support
     private long timestamp;
 
     public CommunityComment() {}
@@ -28,6 +29,9 @@ public class CommunityComment {
 
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
+
+    public String getPhotoUrl() { return photoUrl; }
+    public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }

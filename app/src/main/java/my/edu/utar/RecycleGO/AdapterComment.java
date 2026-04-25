@@ -3,6 +3,7 @@ package my.edu.utar.RecycleGO;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -38,11 +39,19 @@ public class AdapterComment extends RecyclerView.Adapter<AdapterComment.ViewHold
         
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault());
         holder.tvDate.setText(sdf.format(new Date(comment.getTimestamp())));
+
+        // Load comment image if exists
+        if (comment.getPhotoUrl() != null && !comment.getPhotoUrl().isEmpty()) {
+            holder.ivCommentPhoto.setVisibility(View.VISIBLE);
+            my.edu.utar.RecycleGO.utils.ImageManager.loadImage(holder.itemView.getContext(), comment.getPhotoUrl(), holder.ivCommentPhoto);
+        } else {
+            holder.ivCommentPhoto.setVisibility(View.GONE);
+        }
     }
 
     @Override
     public int getItemCount() {
-        return commentList.size();
+        return commentList == null ? 0 : commentList.size();
     }
 
     public void updateList(List<CommunityComment> newList) {
@@ -52,12 +61,14 @@ public class AdapterComment extends RecyclerView.Adapter<AdapterComment.ViewHold
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvAuthor, tvText, tvDate;
+        ImageView ivCommentPhoto;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvAuthor = itemView.findViewById(R.id.comment_author);
             tvText = itemView.findViewById(R.id.comment_text);
             tvDate = itemView.findViewById(R.id.comment_date);
+            ivCommentPhoto = itemView.findViewById(R.id.comment_image);
         }
     }
 }
