@@ -7,6 +7,7 @@ import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
@@ -33,9 +34,9 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.UUID;
 
-import my.edu.utar.RecycleGO.database.CampaignImageHelper;
 import my.edu.utar.RecycleGO.database.CampaignRecord;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class CreateCampaignActivity extends Fragment {
 
@@ -44,35 +45,18 @@ public class CreateCampaignActivity extends Fragment {
     private Button btnSubmit;
     private Calendar calendar;
     private FirestoreManager firestoreManager;
-    private CampaignImageHelper imageHelper;
-    private byte[] selectedImageData = null;
+    private Uri selectedImageUri = null;
 
-    private final ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Bitmap photo = (Bitmap) result.getData().getExtras().get("data");
-                    if (photo != null) {
-                        ivPreview.setImageBitmap(photo);
-                        ivPreview.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                        
-                        // Convert to byte array for SQLite
-                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                        photo.compress(Bitmap.CompressFormat.JPEG, 90, stream);
-                        selectedImageData = stream.toByteArray();
-                    }
+    private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    selectedImageUri = uri;
+                    ivPreview.setImageURI(uri);
+                    ivPreview.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 }
             }
     );
-
-    private final ActivityResultLauncher<String> requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    openCamera();
-                } else {
-                    Toast.makeText(getContext(), "Camera permission denied", Toast.LENGTH_SHORT).show();
-                }
-            });
 
     public CreateCampaignActivity() {
         // Required empty public constructor
@@ -89,7 +73,6 @@ public class CreateCampaignActivity extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         firestoreManager = new FirestoreManager();
-        imageHelper = new CampaignImageHelper(getContext());
         calendar = Calendar.getInstance();
 
         etEventName = view.findViewById(R.id.etEventName);
@@ -107,22 +90,9 @@ public class CreateCampaignActivity extends Fragment {
 
         etDateTime.setOnClickListener(v -> showDateTimePicker());
         
-        view.findViewById(R.id.cvSelectImage).setOnClickListener(v -> checkCameraPermission());
+        view.findViewById(R.id.cvSelectImage).setOnClickListener(v -> pickImageLauncher.launch("image/*"));
 
         btnSubmit.setOnClickListener(v -> submitCampaign());
-    }
-
-    private void checkCameraPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            openCamera();
-        } else {
-            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
-        }
-    }
-
-    private void openCamera() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        cameraLauncher.launch(takePictureIntent);
     }
 
     private void showDateTimePicker() {
@@ -157,16 +127,17 @@ public class CreateCampaignActivity extends Fragment {
         String id = UUID.randomUUID().toString();
         Timestamp timestamp = new Timestamp(calendar.getTime());
 
-        CampaignRecord campaign = new CampaignRecord(id, name, timestamp, loc, "");
+        String imageUrl = null;
+        if (selectedImageUri != null) {
+            imageUrl = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
+        }
+
+        CampaignRecord campaign = new CampaignRecord(id, name, timestamp, loc);
+        campaign.setImageUrl(imageUrl);
 
         firestoreManager.createCampaign(campaign, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                // Save image locally if taken
-                if (selectedImageData != null) {
-                    imageHelper.saveImage(id, selectedImageData);
-                }
-
                 Toast.makeText(getContext(), "Campaign Published!", Toast.LENGTH_SHORT).show();
                 if (getActivity() != null) {
                     getActivity().getSupportFragmentManager().popBackStack();

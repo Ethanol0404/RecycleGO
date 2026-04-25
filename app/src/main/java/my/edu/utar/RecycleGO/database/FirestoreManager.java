@@ -48,6 +48,13 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
+    public void joinCampaign(String campaignId, String userId, OnTaskCompleteListener listener) {
+        db.collection(COLLECTION_CAMPAIGNS).document(campaignId)
+                .update("participants", FieldValue.arrayUnion(userId))
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     // ==================== Centers ====================
     public CollectionReference getCentersCollection() {
         return db.collection(COLLECTION_CENTERS);

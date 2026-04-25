@@ -1,21 +1,27 @@
 package my.edu.utar.RecycleGO.database;
 
 import com.google.firebase.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CampaignRecord {
     private String id;
     private String title;
     private Timestamp date;
     private String location;
+    private String imageUrl;
+    private List<String> participants;
 
+    public CampaignRecord() {
+        this.participants = new ArrayList<>();
+    }
 
-    public CampaignRecord() {}
-
-    public CampaignRecord(String id, String title, Timestamp date, String location, String imageUrl) {
+    public CampaignRecord(String id, String title, Timestamp date, String location) {
         this.id = id;
         this.title = title;
         this.date = date;
         this.location = location;
+        this.participants = new ArrayList<>();
     }
 
     public String getId() { return id; }
@@ -29,4 +35,10 @@ public class CampaignRecord {
 
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public List<String> getParticipants() { return participants; }
+    public void setParticipants(List<String> participants) { this.participants = participants; }
 }

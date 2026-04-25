@@ -1,6 +1,6 @@
 <resources>
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#2E6A5E</item>
+        <item name="windowSplashScreenBackground">#d2fba4</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
         <item name="postSplashScreenTheme">@style/Theme.GROUPASGN</item>
     </style>
