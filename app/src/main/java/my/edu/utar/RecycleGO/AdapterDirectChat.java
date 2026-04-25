@@ -46,7 +46,7 @@ public class AdapterDirectChat extends RecyclerView.Adapter<RecyclerView.ViewHol
         DirectMessage msg = messages.get(position);
         if (holder instanceof SentViewHolder) {
             ((SentViewHolder) holder).tvMessage.setText(msg.getMessage());
-push        } else if (holder instanceof ReceivedViewHolder) {
+      } else if (holder instanceof ReceivedViewHolder) {
             ((ReceivedViewHolder) holder).tvMessage.setText(msg.getMessage());
         }
     }

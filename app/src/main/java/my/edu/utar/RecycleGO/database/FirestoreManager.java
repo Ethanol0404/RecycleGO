@@ -91,6 +91,7 @@ public class FirestoreManager {
         updates.put("status", "Accepted");
         updates.put("centerId", centerId);
         updates.put("centerName", centerName);
+        updates.put("targetCenterIds", java.util.Collections.singletonList(centerId));
 
         db.collection(COLLECTION_REQUESTS).document(requestId).update(updates)
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
@@ -121,13 +122,52 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 
+    public void sendMessage(String requestId, DirectMessage message, OnTaskCompleteListener listener) {
+        // 1. Add message to sub-collection
+        db.collection(COLLECTION_REQUESTS).document(requestId)
+                .collection("messages").add(message)
+                .addOnSuccessListener(documentReference -> {
+                    // 2. Update parent doc with last message time
+                    db.collection(COLLECTION_REQUESTS).document(requestId)
+                            .update("lastMessageTime", com.google.firebase.Timestamp.now());
+                    listener.onSuccess();
+                })
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    public void updateLastRead(String requestId, String role, OnTaskCompleteListener listener) {
+        String field = "Admin".equals(role) ? "lastReadAdmin" : "lastReadUser";
+        db.collection(COLLECTION_REQUESTS).document(requestId)
+                .update(field, com.google.firebase.Timestamp.now())
+                .addOnSuccessListener(aVoid -> { if(listener!=null) listener.onSuccess(); })
+                .addOnFailureListener(e -> { if(listener!=null) listener.onFailure(e.getMessage()); });
+    }
+
+    public com.google.firebase.firestore.Query getChatMessages(String requestId) {
+        return db.collection(COLLECTION_REQUESTS).document(requestId)
+                .collection("messages").orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING);
+    }
+
+    public void submitReport(String requestId, String userId, String reason, OnTaskCompleteListener listener) {
+        java.util.Map<String, Object> report = new java.util.HashMap<>();
+        report.put("requestId", requestId);
+        report.put("userId", userId);
+        report.put("reason", reason);
+        report.put("timestamp", com.google.firebase.Timestamp.now());
+        report.put("status", "Pending");
+
+        db.collection("reports").add(report)
+                .addOnSuccessListener(documentReference -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
     public Query getRequestsByCenters(List<String> centerIds) {
         if (centerIds == null || centerIds.isEmpty()) {
-            // Return a query that will be empty but valid
             return db.collection(COLLECTION_REQUESTS).whereEqualTo("centerId", "NON_EXISTENT");
         }
+        // Use targetCenterIds array to find requests eligible for these centers
         return db.collection(COLLECTION_REQUESTS)
-                .whereIn("centerId", centerIds)
+                .whereArrayContainsAny("targetCenterIds", centerIds)
                 .orderBy("date", Query.Direction.DESCENDING);
     }
 

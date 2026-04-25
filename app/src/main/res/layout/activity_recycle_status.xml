@@ -4,8 +4,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#D1E29B"
-    >
+    android:background="#D1E29B">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
@@ -22,36 +21,53 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="24dp">
-                
-                <!-- Rest of the content -->
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/toggleGroup"
+
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:singleSelection="true"
-                    app:selectionRequired="true"
-                    app:checkedButton="@+id/btn_status_list">
+                    android:layout_marginBottom="16dp">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_status_list"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleGroup"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Recycle Status"
-                        android:textAllCaps="false"/>
+                        app:singleSelection="true"
+                        app:selectionRequired="true"
+                        app:checkedButton="@+id/btn_status_list">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_message_list"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Messages"
-                        android:textAllCaps="false"/>
-                </com.google.android.material.button.MaterialButtonToggleGroup>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_status_list"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Recycle Status"
+                            android:textAllCaps="false"/>
 
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_message_list"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Messages"
+                            android:textAllCaps="false"/>
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <!-- Unread dot for Message Tab -->
+                    <View
+                        android:id="@+id/dot_unread_tab"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/search_bg"
+                        android:backgroundTint="#FF5252"
+                        android:visibility="gone" />
+                </RelativeLayout>
+
+                <!-- Status List View -->
                 <LinearLayout
                     android:id="@+id/layout_status_list"
                     android:layout_width="match_parent"
@@ -91,32 +107,44 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvRecycleStatus"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/status_btnCreate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Create"
+                        android:layout_marginTop="16dp"
+                        android:text="Create New Request"
                         android:backgroundTint="#2E6A5E"
                         android:textAllCaps="false"
                         android:textSize="18sp"
                         app:cornerRadius="30dp" />
                 </LinearLayout>
 
+                <!-- Messages List View -->
                 <LinearLayout
                     android:id="@+id/layout_message_list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:visibility="gone">
+
                     <TextView
+                        android:id="@+id/tv_no_messages"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="No messages yet."
+                        android:text="No active chats."
                         android:gravity="center"
                         android:padding="32dp"
-                        android:textColor="#666666"/>
+                        android:textColor="#666666"
+                        android:visibility="gone"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvMessages"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
                 </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>

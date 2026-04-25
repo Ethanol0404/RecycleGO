@@ -356,7 +356,10 @@ public class Map extends Fragment {
             @Override
             public void onSuccess() {
                 Toast.makeText(getContext(), "Joined " + center.name, Toast.LENGTH_SHORT).show();
-                // Refresh data to update "Join" to "Joined"
+                // When admin joins a center, ensure the primary recycleCenter field is also set
+                java.util.Map<String, Object> updates = new java.util.HashMap<>();
+                updates.put("recycleCenter", center.name);
+                firestoreManager.updateUser(uid, updates, null);
                 loadAndPopulateData();
             }
             @Override

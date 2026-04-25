@@ -2,6 +2,8 @@ package my.edu.utar.RecycleGO.database;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentId;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RecycleRequest implements java.io.Serializable {
     @DocumentId
@@ -13,19 +15,21 @@ public class RecycleRequest implements java.io.Serializable {
     private String remarks;
     private String centerId;
     private String centerName;
-    private String status; // "Requesting", "Accepted", "Completed"
-    private String photoUrl; // Added for storing image reference
+    private String status; // "Requesting", "Accepted", "Completed", "Verified"
+    private String photoUrl;
     private String address;
-    private java.util.List<String> targetCenterIds;
+    private List<String> targetCenterIds;
     
-    // Marked as transient because com.google.firebase.Timestamp is not Serializable.
-    // This prevents crashes when passing RecycleRequest through Bundles/Intents.
     private transient Timestamp lastMessageTime;
     private transient Timestamp lastReadUser;
     private transient Timestamp lastReadAdmin;
 
     public RecycleRequest() {
         // Required for Firestore
+        this.targetCenterIds = new ArrayList<>();
+        this.status = "Requesting";
+        this.centerId = "";
+        this.centerName = "";
     }
 
     public RecycleRequest(String userId, String category, String date, String contact, String remarks) {
@@ -37,7 +41,7 @@ public class RecycleRequest implements java.io.Serializable {
         this.address = "";
         this.centerId = "";
         this.centerName = "";
-        this.targetCenterIds = new java.util.ArrayList<>();
+        this.targetCenterIds = new ArrayList<>();
         this.status = "Requesting";
     }
 
@@ -75,8 +79,8 @@ public class RecycleRequest implements java.io.Serializable {
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
 
-    public java.util.List<String> getTargetCenterIds() { return targetCenterIds; }
-    public void setTargetCenterIds(java.util.List<String> targetCenterIds) { this.targetCenterIds = targetCenterIds; }
+    public List<String> getTargetCenterIds() { return targetCenterIds; }
+    public void setTargetCenterIds(List<String> targetCenterIds) { this.targetCenterIds = targetCenterIds; }
 
     public Timestamp getLastMessageTime() { return lastMessageTime; }
     public void setLastMessageTime(Timestamp lastMessageTime) { this.lastMessageTime = lastMessageTime; }

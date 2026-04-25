@@ -19,6 +19,7 @@ import my.edu.utar.RecycleGO.database.RecycleRequest;
 public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleStatus.ViewHolder> {
     private List<RecycleRequest> list;
     private OnStatusActionListener actionListener;
+    private boolean isAdmin;
 
     public interface OnStatusActionListener {
         void onAccept(RecycleRequest request);
@@ -35,6 +36,11 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
     public void updateList(List<RecycleRequest> newList) {
         this.list = newList;
         notifyDataSetChanged();
+    }
+    public AdapterRecycleStatus(List<RecycleRequest> list, boolean isAdmin, OnStatusActionListener actionListener) {
+        this.list = list;
+        this.isAdmin = isAdmin;
+        this.actionListener = actionListener;
     }
 
     @NonNull
@@ -53,7 +59,9 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
         holder.tvStatus.setText(request.getStatus());
         
         String centerName = request.getCenterName();
-        holder.tvCenter.setText((centerName == null || centerName.isEmpty()) ? "Pending" : centerName);
+        String displayCenter = (centerName == null || centerName.isEmpty() || ("MULTIPLE".equals(request.getCenterId()) && "Requesting".equalsIgnoreCase(request.getStatus()))) 
+                ? "Multiple Centers" : centerName;
+        holder.tvCenter.setText(displayCenter);
         
         holder.itemView.setOnClickListener(v -> {
             if (actionListener != null) actionListener.onItemClick(request);
@@ -80,11 +88,11 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
                     break;
                 case "Completed":
                     holder.card.setCardBackgroundColor(Color.parseColor("#FFF176"));
-                    holder.btnConfirmComplete.setVisibility(View.VISIBLE);
+                    if (!isAdmin) holder.btnConfirmComplete.setVisibility(View.VISIBLE);
                     break;
                 case "Verified":
                     holder.card.setCardBackgroundColor(Color.parseColor("#FFF176"));
-                    holder.tvPointsEarned.setVisibility(View.VISIBLE);
+                    if (!isAdmin) holder.tvPointsEarned.setVisibility(View.VISIBLE);
                     break;
                 default:
                     holder.card.setCardBackgroundColor(Color.WHITE);

@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
+import android.view. View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -338,8 +338,8 @@ public class PickUpActivity extends Fragment {
                     }).show();
         });
 
-        String[] categories = {"Plastic", "Metal", "Paper", "Glass"};
-        boolean[] checkedItems = {false, false, false, false};
+        String[] categories = {"Plastic", "Metal", "Paper", "Glass", "Others"};
+        boolean[] checkedItems = new boolean[categories.length];
 
         etCategory.setOnClickListener(v -> {
             new AlertDialog.Builder(requireContext())

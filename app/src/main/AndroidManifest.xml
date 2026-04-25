@@ -20,6 +20,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GROUPASGN">
         <activity
+            android:name=".ChatDirectActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GROUPASGN"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".HomeFragment"
             android:exported="false" />
         <activity
@@ -31,6 +36,7 @@
             android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -38,12 +44,10 @@
             android:name=".LoginActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
         <activity
             android:name=".SignUpActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
         <activity
             android:name=".UserProfileActivity"
             android:exported="false" />
@@ -54,7 +58,6 @@
             android:name=".FrameActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
         <activity
             android:name=".CommunityProfileActivity"
             android:exported="false" />

@@ -1,19 +1,4 @@
 <resources>
-    <!-- Base application theme. -->
-    <style name="Theme.GROUPASGN" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">#2E6A5E</item>
-        <item name="colorPrimaryVariant">#1A433A</item>
-        <item name="colorOnPrimary">@android:color/white</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">#4CAF50</item>
-        <item name="colorSecondaryVariant">#388E3C</item>
-        <item name="colorOnSecondary">@android:color/white</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
-    </style>
-
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#2E6A5E</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
