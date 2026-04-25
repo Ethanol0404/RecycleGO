@@ -169,42 +169,48 @@ public class RewardsActivity extends Fragment {
         List<PieEntry> entries = new ArrayList<>();
         List<Integer> colors = new ArrayList<>();
 
-        for (int i = 0; i < materials.size(); i++) {
-            String material = materials.get(i);
-            long count = counts.get(i);
+        if (materials != null && !materials.isEmpty()) {
+            for (int i = 0; i < materials.size(); i++) {
+                String material = materials.get(i);
+                long count = counts.get(i);
 
-            entries.add(new PieEntry(count, material));
+                entries.add(new PieEntry(count, material));
 
-            // Logic for tree counting and specific colors
-            if (material.equalsIgnoreCase("Plastic")) {
-                totalTrees += count * 10;
-                colors.add(Color.parseColor("#2196F3")); // Blue
-            } else if (material.equalsIgnoreCase("Paper")) {
-                totalTrees += count * 5;
-                colors.add(Color.parseColor("#FFEB3B")); // Yellow
-            } else if (material.equalsIgnoreCase("Metal")) {
-                totalTrees += count * 8;
-                colors.add(Color.parseColor("#9E9E9E")); // Grey
-            } else if (material.equalsIgnoreCase("E-Waste")) {
-                totalTrees += count * 15;
-                colors.add(Color.parseColor("#9C27B0")); // Purple
-            } else if (material.equalsIgnoreCase("Clothing") || material.equalsIgnoreCase("Textile")) {
-                totalTrees += count * 4;
-                colors.add(Color.parseColor("#795548")); // Brown
-            } else if (material.equalsIgnoreCase("Household Waste")) {
-                totalTrees += count * 2;
-                colors.add(Color.parseColor("#4CAF50")); // Green
-            } else {
-                totalTrees += count * 2;
-                colors.add(ColorTemplate.JOYFUL_COLORS[i % ColorTemplate.JOYFUL_COLORS.length]);
+                // Logic for tree counting and specific colors
+                if (material.equalsIgnoreCase("Plastic")) {
+                    totalTrees += count * 10;
+                    colors.add(Color.parseColor("#2196F3")); // Blue
+                } else if (material.equalsIgnoreCase("Paper")) {
+                    totalTrees += count * 5;
+                    colors.add(Color.parseColor("#FFEB3B")); // Yellow
+                } else if (material.equalsIgnoreCase("Metal")) {
+                    totalTrees += count * 8;
+                    colors.add(Color.parseColor("#9E9E9E")); // Grey
+                } else if (material.equalsIgnoreCase("E-Waste")) {
+                    totalTrees += count * 15;
+                    colors.add(Color.parseColor("#9C27B0")); // Purple
+                } else if (material.equalsIgnoreCase("Clothing") || material.equalsIgnoreCase("Textile")) {
+                    totalTrees += count * 4;
+                    colors.add(Color.parseColor("#795548")); // Brown
+                } else if (material.equalsIgnoreCase("Household Waste")) {
+                    totalTrees += count * 2;
+                    colors.add(Color.parseColor("#4CAF50")); // Green
+                } else {
+                    totalTrees += count * 2;
+                    colors.add(ColorTemplate.JOYFUL_COLORS[i % ColorTemplate.JOYFUL_COLORS.length]);
+                }
             }
+        } else {
+            // If no data, show an empty placeholder slice
+            entries.add(new PieEntry(1f, "No Data"));
+            colors.add(Color.LTGRAY);
         }
 
         if (txtTreesSaved != null) {
             txtTreesSaved.setText("You save " + totalTrees + " Trees!");
         }
 
-        if (pieChart == null || entries.isEmpty()) return;
+        if (pieChart == null) return;
 
         PieDataSet dataSet = new PieDataSet(entries, "");
         dataSet.setSliceSpace(3f);
@@ -234,6 +240,10 @@ public class RewardsActivity extends Fragment {
             public void onValueSelected(com.github.mikephil.charting.data.Entry e, com.github.mikephil.charting.highlight.Highlight h) {
                 if (e instanceof PieEntry) {
                     PieEntry pe = (PieEntry) e;
+                    if (pe.getLabel().equals("No Data")) {
+                        pieChart.setCenterText("No recycling data");
+                        return;
+                    }
                     float total = pieChart.getData().getYValueSum();
                     float percentage = (pe.getValue() / total) * 100f;
                     

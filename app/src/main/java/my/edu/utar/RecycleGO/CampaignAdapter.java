@@ -13,7 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -93,59 +93,14 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
-    private static void showParticipantsDialog(Context context, List<String> participantIds, FirestoreManager firestoreManager) {
-        RecyclerView rv = new RecyclerView(context);
-        rv.setLayoutManager(new LinearLayoutManager(context));
-        rv.setPadding(20, 20, 20, 20);
-
-        List<UserRecord> users = new ArrayList<>();
-        ParticipantAdapter adapter = new ParticipantAdapter(users);
-        rv.setAdapter(adapter);
-
-        AlertDialog dialog = new AlertDialog.Builder(context)
-                .setTitle("Participants")
-                .setView(rv)
-                .setPositiveButton("Close", null)
-                .create();
-
-        dialog.show();
-
-        if (participantIds != null && !participantIds.isEmpty()) {
-            for (String id : participantIds) {
-                firestoreManager.getUser(id, new FirestoreManager.OnUserFetchListener() {
-                    @Override
-                    public void onUserFetched(UserRecord user) {
-                        if (user != null) {
-                            users.add(user);
-                            adapter.notifyItemInserted(users.size() - 1);
-                        }
-                    }
-                    @Override
-                    public void onFailure(String error) {}
-                });
-            }
-        }
-    }
-
-    private static class ParticipantAdapter extends RecyclerView.Adapter<ParticipantAdapter.VH> {
-        List<UserRecord> list;
-        ParticipantAdapter(List<UserRecord> list) { this.list = list; }
-        @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
-            return new VH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_participant, p, false));
-        }
-        @Override public void onBindViewHolder(@NonNull VH h, int p) {
-            UserRecord u = list.get(p);
-            h.name.setText(u.getUsername());
-            if (u.getProfilePicUrl() != null && !u.getProfilePicUrl().isEmpty()) {
-                Glide.with(h.itemView.getContext()).load(u.getProfilePicUrl()).placeholder(R.drawable.useravatar).into(h.avatar);
-            } else {
-                h.avatar.setImageResource(R.drawable.useravatar);
-            }
-        }
-        @Override public int getItemCount() { return list.size(); }
-        class VH extends RecyclerView.ViewHolder {
-            ImageView avatar; TextView name;
-            VH(View v) { super(v); avatar = v.findViewById(R.id.iv_avatar); name = v.findViewById(R.id.tv_username); }
+    private static void openParticipantsFragment(Context context, List<String> participantIds) {
+        if (context instanceof AppCompatActivity) {
+            AppCompatActivity activity = (AppCompatActivity) context;
+            ParticipantsFragment fragment = ParticipantsFragment.newInstance(participantIds);
+            activity.getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment) // Assuming R.id.fragment_container is your main container
+                    .addToBackStack(null)
+                    .commit();
         }
     }
 
@@ -187,7 +142,7 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 btnJoin.setText("View Participants");
                 btnJoin.setEnabled(true);
                 btnJoin.setAlpha(1.0f);
-                btnJoin.setOnClickListener(v -> showParticipantsDialog(itemView.getContext(), item.getParticipants(), firestoreManager));
+                btnJoin.setOnClickListener(v -> openParticipantsFragment(itemView.getContext(), item.getParticipants()));
             } else {
                 if (item.getParticipants() != null && item.getParticipants().contains(currentUid)) {
                     btnJoin.setText("Joined");
@@ -263,7 +218,7 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 btnJoin.setText("View Participants");
                 btnJoin.setEnabled(true);
                 btnJoin.setAlpha(1.0f);
-                btnJoin.setOnClickListener(v -> showParticipantsDialog(itemView.getContext(), item.getParticipants(), firestoreManager));
+                btnJoin.setOnClickListener(v -> openParticipantsFragment(itemView.getContext(), item.getParticipants()));
             } else {
                 if (item.getParticipants() != null && item.getParticipants().contains(currentUid)) {
                     btnJoin.setText("Joined");
