@@ -14,12 +14,13 @@
         android:padding="16dp"
         android:gravity="center_vertical">
 
-        <ImageView
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/manage_comm_icon"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/community"
-            android:scaleType="centerCrop" />
+            app:civ_border_color="#2D6A4F"
+            app:civ_border_width="1dp" />
 
         <LinearLayout
             android:layout_width="0dp"

@@ -1,11 +1,14 @@
 package my.edu.utar.RecycleGO;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -32,8 +35,9 @@ public class Community extends Fragment {
     private FirestoreManager firestoreManager;
     private String userUid;
     private String userRole = "User";
-    private String selectedCommunityId = ""; // Track current filter
+    private String selectedCommunityId = "";
     private List<String> subscribedIds = new ArrayList<>();
+    private String targetPostID = null;
 
     @Nullable
     @Override
@@ -44,10 +48,12 @@ public class Community extends Fragment {
 
         View view = inflater.inflate(R.layout.activity_community, container, false);
 
+        if (getArguments() != null) {
+            targetPostID = getArguments().getString("targetPostID");
+        }
+
         firestoreManager = new FirestoreManager();
-        
-        // Use UID from SharedPreferences
-        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
         userUid = prefs.getString("loggedInUid", "");
         userRole = prefs.getString("loggedInRole", "User");
 
@@ -88,7 +94,6 @@ public class Community extends Fragment {
         if (btnAdd != null) {
             btnAdd.setOnClickListener(v -> {
                 Intent intent = new Intent(getContext(), CreatePostActivity.class);
-                // Pass current selection or fallback
                 String targetId = selectedCommunityId;
                 if (targetId.isEmpty() && !subscribedIds.isEmpty()) {
                     targetId = subscribedIds.get(0);
@@ -98,42 +103,82 @@ public class Community extends Fragment {
             });
         }
 
+        applyCustomTheme(view);
         return view;
+    }
+
+    private void applyCustomTheme(View view) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE);
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        String accentColorCode = prefs.getString("accent_color", "#1A2A4E");
+        int bottomColor = Color.parseColor(bottomColorCode);
+        int accentColor = Color.parseColor(accentColorCode);
+
+        TextView tvTitle = view.findViewById(R.id.tv_community_title);
+        FloatingActionButton btnAdd = view.findViewById(R.id.community_btnAdd);
+        FloatingActionButton btnAddGroup = view.findViewById(R.id.community_btnAddGroup);
+
+        if (tvTitle != null) tvTitle.setTextColor(bottomColor);
+        if (btnAdd != null) btnAdd.setBackgroundTintList(android.content.res.ColorStateList.valueOf(accentColor));
+        if (btnAddGroup != null) btnAddGroup.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bottomColor));
     }
 
     @Override
     public void onResume() {
         super.onResume();
         if (userUid != null && !userUid.isEmpty()) {
-            loadSubscribedCommunities();
-        } else {
-            Toast.makeText(getContext(), "Please login to view community", Toast.LENGTH_SHORT).show();
+            if (targetPostID != null) {
+                findPostAndLoad(targetPostID);
+            } else {
+                loadSubscribedCommunities();
+            }
         }
+    }
+
+    private void findPostAndLoad(String postID) {
+        firestoreManager.getPost(postID, new FirestoreManager.OnPostFetchListener() {
+            @Override
+            public void onPostFetched(CommunityPost post) {
+                if (post != null) {
+                    selectedCommunityId = post.getCommunityID();
+                    loadSubscribedCommunities();
+                } else {
+                    loadSubscribedCommunities();
+                }
+            }
+
+            @Override
+            public void onFailure(String error) {
+                loadSubscribedCommunities();
+            }
+        });
     }
 
     private void loadSubscribedCommunities() {
         firestoreManager.getUser(userUid, new FirestoreManager.OnUserFetchListener() {
             @Override
             public void onUserFetched(UserRecord user) {
-                if (user != null && user.getSubscribedCommunities() != null && !user.getSubscribedCommunities().isEmpty()) {
-                    subscribedIds = user.getSubscribedCommunities();
-
-                    if (selectedCommunityId.isEmpty()) {
+                if (user != null) {
+                    subscribedIds = user.getSubscribedCommunities() != null ? user.getSubscribedCommunities() : new ArrayList<>();
+                    
+                    if (selectedCommunityId.isEmpty() && !subscribedIds.isEmpty()) {
                         selectedCommunityId = subscribedIds.get(0);
                     }
 
                     fetchCommunityModels(subscribedIds);
-                    loadFeed(java.util.Collections.singletonList(selectedCommunityId));
+                    
+                    if (!selectedCommunityId.isEmpty()) {
+                        loadFeed(java.util.Collections.singletonList(selectedCommunityId));
+                    } else {
+                        fetchAllCommunitiesForDiscovery();
+                    }
                 } else {
-                    // Handle case where user has no subscriptions - Load all communities for discovery
                     fetchAllCommunitiesForDiscovery();
                 }
             }
-
             @Override
             public void onFailure(String error) {
-                if (getContext() != null)
-                    Toast.makeText(getContext(), "Error loading profile: " + error, Toast.LENGTH_SHORT).show();
+                if (getContext() != null) Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -144,16 +189,12 @@ public class Community extends Fragment {
             public void onListFetched(List<CommunityModel> list) {
                 communityAdapter.updateList(list);
                 if (!list.isEmpty()) {
-                    selectedCommunityId = list.get(0).getCommunityID();
+                    if (selectedCommunityId.isEmpty()) selectedCommunityId = list.get(0).getCommunityID();
                     loadFeed(java.util.Collections.singletonList(selectedCommunityId));
                 }
             }
-
             @Override
-            public void onFailure(String error) {
-                if (getContext() != null)
-                    Toast.makeText(getContext(), "Discovery failed: " + error, Toast.LENGTH_SHORT).show();
-            }
+            public void onFailure(String error) {}
         });
     }
 
@@ -161,12 +202,10 @@ public class Community extends Fragment {
         firestoreManager.getAllCommunities(new FirestoreManager.OnListFetchListener<CommunityModel>() {
             @Override
             public void onListFetched(List<CommunityModel> list) {
-                List<CommunityModel> filtered = list.stream()
-                        .filter(c -> ids.contains(c.getCommunityID()))
-                        .collect(java.util.stream.Collectors.toList());
+                List<CommunityModel> filtered = new ArrayList<>();
+                for (CommunityModel c : list) { if (ids.contains(c.getCommunityID())) filtered.add(c); }
                 communityAdapter.updateList(filtered);
             }
-
             @Override
             public void onFailure(String error) {}
         });
@@ -182,18 +221,24 @@ public class Community extends Fragment {
             @Override
             public void onListFetched(List<CommunityPost> list) {
                 feedAdapter.updateList(list);
+                if (targetPostID != null) {
+                    for (int i = 0; i < list.size(); i++) {
+                        if (list.get(i).getPostID().equals(targetPostID)) {
+                            rvFeed.scrollToPosition(i);
+                            // Do not clear targetPostID here yet, in case onListFetched is called during async transitions
+                            // We can use a temporary flag or just scroll.
+                            final int pos = i;
+                            rvFeed.post(() -> rvFeed.scrollToPosition(pos));
+                            break;
+                        }
+                    }
+                    targetPostID = null; // Clear it after processing
+                }
             }
-
             @Override
             public void onFailure(String error) {
-                // If it's a new community or no index, don't show toast if it's just empty
-                if (getContext() != null) {
-                    // Check if error is index related
-                    if (error.contains("FAILED_PRECONDITION")) {
-                        Toast.makeText(getContext(), "Loading feed... (Setting up database)", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getContext(), "Feed Error: " + error, Toast.LENGTH_SHORT).show();
-                    }
+                if (getContext() != null && !error.contains("FAILED_PRECONDITION")) {
+                    Toast.makeText(getContext(), "Feed Error: " + error, Toast.LENGTH_SHORT).show();
                 }
             }
         });

@@ -2,15 +2,20 @@ package my.edu.utar.RecycleGO;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -21,6 +26,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -28,9 +34,12 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.RecycleCenter;
@@ -41,6 +50,7 @@ public class PickUpActivity extends Fragment {
 
     private TextInputEditText etCategory, etDate, etContact, etAddress, etRemarks, etCenter;
     private ImageButton btnPhoto;
+    private TextView tvPhotoStatus;
     private Button btnSubmit;
 
     private String flow = "STATUS_TO_FORM";
@@ -53,6 +63,7 @@ public class PickUpActivity extends Fragment {
     
     private Uri cameraImageUri;
     private Uri selectedImageUri;
+    private String manualImageUrl = null;
     private String savedImageFileName = null;
 
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
@@ -60,12 +71,8 @@ public class PickUpActivity extends Fragment {
             uri -> {
                 if (uri != null) {
                     selectedImageUri = uri;
-                    if (isAdded() && btnPhoto != null) {
-                        com.bumptech.glide.Glide.with(this)
-                                .load(uri)
-                                .centerCrop()
-                                .into(btnPhoto);
-                    }
+                    manualImageUrl = null;
+                    updatePhotoPreview(uri);
                 }
             }
     );
@@ -75,12 +82,8 @@ public class PickUpActivity extends Fragment {
             success -> {
                 if (success && cameraImageUri != null) {
                     selectedImageUri = cameraImageUri;
-                    if (isAdded() && btnPhoto != null) {
-                        com.bumptech.glide.Glide.with(this)
-                                .load(cameraImageUri)
-                                .centerCrop()
-                                .into(btnPhoto);
-                    }
+                    manualImageUrl = null;
+                    updatePhotoPreview(cameraImageUri);
                 } else {
                     if (isAdded()) Toast.makeText(getContext(), "Camera cancelled or failed", Toast.LENGTH_SHORT).show();
                 }
@@ -97,6 +100,18 @@ public class PickUpActivity extends Fragment {
                 }
             }
     );
+
+    private void updatePhotoPreview(Object source) {
+        if (isAdded() && btnPhoto != null) {
+            Glide.with(this)
+                    .load(source)
+                    .centerCrop()
+                    .into(btnPhoto);
+            if (tvPhotoStatus != null) {
+                tvPhotoStatus.setVisibility(View.GONE);
+            }
+        }
+    }
 
     private void launchCamera() {
         try {
@@ -193,6 +208,8 @@ public class PickUpActivity extends Fragment {
         if (selectedImageUri != null) {
             savedImageFileName = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
             request.setPhotoUrl(savedImageFileName);
+        } else if (manualImageUrl != null) {
+            request.setPhotoUrl(manualImageUrl);
         }
 
         firestoreManager.submitRequest(request, new FirestoreManager.OnTaskCompleteListener() {
@@ -222,6 +239,7 @@ public class PickUpActivity extends Fragment {
         View view = inflater.inflate(R.layout.activity_pick_up, container, false);
 
         btnPhoto = view.findViewById(R.id.btnPhoto);
+        tvPhotoStatus = view.findViewById(R.id.tvPhotoStatus);
         etCategory = view.findViewById(R.id.etCategory);
         etDate = view.findViewById(R.id.etDate);
         etContact = view.findViewById(R.id.etContact);
@@ -231,11 +249,16 @@ public class PickUpActivity extends Fragment {
         btnSubmit = view.findViewById(R.id.btnSubmit);
 
         if (selectedImageUri != null) {
-            com.bumptech.glide.Glide.with(this).load(selectedImageUri).centerCrop().into(btnPhoto);
+            updatePhotoPreview(selectedImageUri);
         } else if (isEditMode && editRequest.getPhotoUrl() != null) {
-            File file = new File(requireContext().getFilesDir(), editRequest.getPhotoUrl());
-            if (file.exists()) {
-                com.bumptech.glide.Glide.with(this).load(file).centerCrop().into(btnPhoto);
+            String url = editRequest.getPhotoUrl();
+            if (url.startsWith("http")) {
+                updatePhotoPreview(url);
+            } else {
+                File file = new File(requireContext().getFilesDir(), url);
+                if (file.exists()) {
+                    updatePhotoPreview(file);
+                }
             }
         }
 
@@ -262,7 +285,7 @@ public class PickUpActivity extends Fragment {
         });
 
         btnPhoto.setOnClickListener(v -> {
-            String[] options = {"Take Photo", "Choose from Gallery"};
+            String[] options = {"Take Photo", "Choose from Gallery", "Insert Image URL"};
             new AlertDialog.Builder(requireContext())
                     .setTitle("Select Option")
                     .setItems(options, (dialog, which) -> {
@@ -273,8 +296,10 @@ public class PickUpActivity extends Fragment {
                             } else {
                                 requestCameraPermission.launch(android.Manifest.permission.CAMERA);
                             }
-                        } else {
+                        } else if (which == 1) {
                             getContent.launch("image/*");
+                        } else {
+                            showUrlInputDialog();
                         }
                     }).show();
         });
@@ -285,40 +310,70 @@ public class PickUpActivity extends Fragment {
                 return;
             }
 
-            // Fetch the first selected center to get its supported services
-            firestoreManager.getCentersCollection().document(selectedCenterIds.get(0)).get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        RecycleCenter center = documentSnapshot.toObject(RecycleCenter.class);
-                        if (center != null && center.supportedServices != null) {
-                            String[] services = center.supportedServices.split(",\\s*");
-                            boolean[] checkedItems = new boolean[services.length];
-                            
-                            // Maintain selection if already set
-                            String currentCategory = etCategory.getText().toString();
-                            for(int i=0; i<services.length; i++) {
-                                if(currentCategory.contains(services[i])) checkedItems[i] = true;
-                            }
+            // Fetch all selected centers to find common services
+            firestoreManager.getCentersByIds(selectedCenterIds, new FirestoreManager.OnListFetchListener<RecycleCenter>() {
+                @Override
+                public void onListFetched(List<RecycleCenter> centers) {
+                    if (centers == null || centers.isEmpty()) {
+                        Toast.makeText(getContext(), "Could not load center information", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-                            new AlertDialog.Builder(requireContext())
-                                    .setTitle("Select Service")
-                                    .setMultiChoiceItems(services, checkedItems, (dialog, which, isChecked) -> {
-                                        checkedItems[which] = isChecked;
-                                    })
-                                    .setPositiveButton("OK", (dialog, which) -> {
-                                        StringBuilder builder = new StringBuilder();
-                                        for (int i = 0; i < services.length; i++) {
-                                            if (checkedItems[i]) {
-                                                if (builder.length() > 0) builder.append(", ");
-                                                builder.append(services[i]);
-                                            }
-                                        }
-                                        etCategory.setText(builder.toString());
-                                    })
-                                    .show();
-                        } else {
-                            Toast.makeText(getContext(), "No services listed for this center", Toast.LENGTH_SHORT).show();
+                    Set<String> commonServices = null;
+
+                    for (RecycleCenter center : centers) {
+                        if (center.supportedServices == null || center.supportedServices.isEmpty()) {
+                            commonServices = new HashSet<>();
+                            break;
                         }
-                    });
+
+                        String[] currentServices = center.supportedServices.split(",\\s*");
+                        Set<String> centerServices = new HashSet<>(Arrays.asList(currentServices));
+
+                        if (commonServices == null) {
+                            commonServices = centerServices;
+                        } else {
+                            commonServices.retainAll(centerServices);
+                        }
+                    }
+
+                    if (commonServices == null || commonServices.isEmpty()) {
+                        Toast.makeText(getContext(), "No common services supported by all selected centers", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    final String[] servicesArray = commonServices.toArray(new String[0]);
+                    Arrays.sort(servicesArray);
+                    boolean[] checkedItems = new boolean[servicesArray.length];
+                    
+                    String currentCategory = etCategory.getText().toString();
+                    for(int i=0; i<servicesArray.length; i++) {
+                        if(currentCategory.contains(servicesArray[i])) checkedItems[i] = true;
+                    }
+
+                    new AlertDialog.Builder(requireContext())
+                            .setTitle("Select Service")
+                            .setMultiChoiceItems(servicesArray, checkedItems, (dialog, which, isChecked) -> {
+                                checkedItems[which] = isChecked;
+                            })
+                            .setPositiveButton("OK", (dialog, which) -> {
+                                StringBuilder builder = new StringBuilder();
+                                for (int i = 0; i < servicesArray.length; i++) {
+                                    if (checkedItems[i]) {
+                                        if (builder.length() > 0) builder.append(", ");
+                                        builder.append(servicesArray[i]);
+                                    }
+                                }
+                                etCategory.setText(builder.toString());
+                            })
+                            .show();
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         etDate.setOnClickListener(v -> {
@@ -366,7 +421,10 @@ public class PickUpActivity extends Fragment {
                 if (selectedImageUri != null) {
                     savedImageFileName = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
                     editRequest.setPhotoUrl(savedImageFileName);
+                } else if (manualImageUrl != null) {
+                    editRequest.setPhotoUrl(manualImageUrl);
                 }
+
                 firestoreManager.updateRecycleRequest(editRequest, new FirestoreManager.OnTaskCompleteListener() {
                     @Override
                     public void onSuccess() {
@@ -393,7 +451,88 @@ public class PickUpActivity extends Fragment {
             }
         });
 
+        applyCustomTheme(view);
+
         return view;
+    }
+
+    private void applyCustomTheme(View view) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String headerColorCode = prefs.getString("header_color", "#D1E29B");
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        
+        int headerColor = Color.parseColor(headerColorCode);
+        int bottomColor = Color.parseColor(bottomColorCode);
+
+        // Apply header_color to background
+        view.setBackgroundColor(headerColor);
+
+        if (btnSubmit != null) {
+            btnSubmit.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bottomColor));
+        }
+        
+        // Update title color
+        TextView title = view.findViewById(R.id.tv_request_title);
+        if (title != null) title.setTextColor(bottomColor);
+
+        // Also update all labels to bottom color as requested previously for other screens
+        updateTextColorsRecursively((ViewGroup) view, bottomColor);
+    }
+
+    private void updateTextColorsRecursively(ViewGroup parent, int color) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child instanceof ViewGroup) {
+                updateTextColorsRecursively((ViewGroup) child, color);
+            } else if (child instanceof TextView && !(child instanceof EditText)) {
+                ((TextView) child).setTextColor(color);
+            }
+        }
+    }
+
+    private void showUrlInputDialog() {
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_url_input, null);
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+
+        // Theme Support
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String headerColorCode = prefs.getString("header_color", "#def9ac");
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int headerColor = Color.parseColor(headerColorCode);
+        int bottomColor = Color.parseColor(bottomColorCode);
+
+        dialogView.setBackgroundColor(headerColor);
+        
+        TextView title = dialogView.findViewById(R.id.dialog_title);
+        EditText input = dialogView.findViewById(R.id.dialog_input);
+        Button btnOk = dialogView.findViewById(R.id.btn_dialog_ok);
+        Button btnCancel = dialogView.findViewById(R.id.btn_dialog_cancel);
+
+        if (title != null) title.setTextColor(bottomColor);
+        if (input != null) {
+            input.setTextColor(bottomColor);
+            input.setHintTextColor(Color.argb(128, Color.red(bottomColor), Color.green(bottomColor), Color.blue(bottomColor)));
+        }
+        if (btnOk != null) btnOk.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bottomColor));
+        if (btnCancel != null) btnCancel.setTextColor(bottomColor);
+
+        btnOk.setOnClickListener(v -> {
+            String url = input.getText().toString().trim();
+            if (!url.isEmpty()) {
+                manualImageUrl = url;
+                selectedImageUri = null;
+                updatePhotoPreview(url);
+                dialog.dismiss();
+            }
+        });
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private void applySelectionToRequest(RecycleRequest request) {

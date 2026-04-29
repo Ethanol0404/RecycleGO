@@ -11,6 +11,7 @@ public class CampaignRecord {
     private String location;
     private String imageUrl;
     private List<String> participants;
+    private String createdBy;
 
     public CampaignRecord() {
         this.participants = new ArrayList<>();
@@ -41,4 +42,7 @@ public class CampaignRecord {
 
     public List<String> getParticipants() { return participants; }
     public void setParticipants(List<String> participants) { this.participants = participants; }
+
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 }

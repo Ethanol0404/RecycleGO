@@ -8,6 +8,7 @@ public class ChatMessage {
     private boolean isUser;
     private Bitmap imageBitmap;
     private Uri imageUri;
+    private String userProfilePicUrl;
 
     public ChatMessage(String message, boolean isUser) {
         this.message = message;
@@ -44,5 +45,13 @@ public class ChatMessage {
 
     public boolean hasImage() {
         return imageBitmap != null || imageUri != null;
+    }
+
+    public String getUserProfilePicUrl() {
+        return userProfilePicUrl;
+    }
+
+    public void setUserProfilePicUrl(String userProfilePicUrl) {
+        this.userProfilePicUrl = userProfilePicUrl;
     }
 }

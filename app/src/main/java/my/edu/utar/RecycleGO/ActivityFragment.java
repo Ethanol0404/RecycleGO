@@ -2,10 +2,12 @@ package my.edu.utar.RecycleGO;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -42,10 +44,34 @@ public class ActivityFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         firestoreManager = new FirestoreManager();
-        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        userId = prefs.getString("loggedInUid", "");
+        SharedPreferences userPrefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userId = userPrefs.getString("loggedInUid", "");
 
+        applyCustomTheme(view);
         loadPointHistory();
+    }
+
+    private void applyCustomTheme(View view) {
+        SharedPreferences appPrefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String headerColorCode = appPrefs.getString("header_color", "#D1E29B");
+        String bottomColorCode = appPrefs.getString("bottom_color", "#265200");
+        
+        int headerColor = Color.parseColor(headerColorCode);
+        int bottomColor = Color.parseColor(bottomColorCode);
+
+        // Apply header_color to the root background
+        view.setBackgroundColor(headerColor);
+
+        // Find the title TextView and apply bottom_color for consistency
+        if (view instanceof ViewGroup) {
+            ViewGroup root = (ViewGroup) view;
+            for (int i = 0; i < root.getChildCount(); i++) {
+                View child = root.getChildAt(i);
+                if (child instanceof TextView) {
+                    ((TextView) child).setTextColor(bottomColor);
+                }
+            }
+        }
     }
 
     private void loadPointHistory() {

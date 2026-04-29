@@ -67,6 +67,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-storage")
 
     // Gemini AI - Corrected to 0.9.0 (latest stable) for Gemini 1.5 support
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")

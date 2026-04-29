@@ -6,4 +6,7 @@
     <color name="nav_bg">#254E00</color>
     <color name="text_dark">#1A202C</color>
     <color name="input_hint">#A0AEC0</color>
+    <color name="theme_green_bg">#D1E29B</color>
+    <color name="theme_dark_green">#254E00</color>
+    <color name="theme_accent_blue">#1A2A4E</color>
 </resources>

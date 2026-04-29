@@ -1,10 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/main"
+    android:id="@+id/main_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#D1E29B">
+    android:background="@android:color/transparent">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
@@ -20,7 +21,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="20dp">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
@@ -41,8 +42,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Recycle Status"
-                            android:textAllCaps="false"/>
+                            android:text="Status"
+                            android:textAllCaps="false"
+                            android:backgroundTint="#F8F9FA"
+                            android:textColor="#1A2A4E"
+                            app:strokeColor="#254E00"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_message_list"
@@ -50,11 +54,26 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Messages"
-                            android:textAllCaps="false"/>
+                            android:text="Chats"
+                            android:textAllCaps="false"
+                            android:backgroundTint="#F8F9FA"
+                            android:textColor="#1A2A4E"
+                            app:strokeColor="#254E00"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_join_requests"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Join Req"
+                            android:textAllCaps="false"
+                            android:backgroundTint="#F8F9FA"
+                            android:textColor="#1A2A4E"
+                            app:strokeColor="#254E00"
+                            android:visibility="gone"/>
                     </com.google.android.material.button.MaterialButtonToggleGroup>
 
-                    <!-- Unread dot for Message Tab -->
                     <View
                         android:id="@+id/dot_unread_tab"
                         android:layout_width="10dp"
@@ -74,25 +93,40 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <LinearLayout
+                    <androidx.cardview.widget.CardView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="end"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="2dp">
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/outline_arrow_drop_down_24" />
-
-                        <Spinner
-                            android:id="@+id/statusSpinner"
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@null" />
-                    </LinearLayout>
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="4dp"
+                            android:paddingVertical="4dp"
+                            android:background="#F8F9FA">
+
+                            <ImageView
+                                android:id="@+id/spinner_arrow"
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@drawable/outline_arrow_drop_down_24"
+                                app:tint="#254E00" />
+
+                            <Spinner
+                                android:id="@+id/statusSpinner"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@null"
+                                android:minWidth="140dp"
+                                android:spinnerMode="dropdown" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
 
                     <TextView
                         android:id="@+id/tv_no_data"
@@ -146,6 +180,32 @@
                         android:layout_height="wrap_content"
                         android:nestedScrollingEnabled="false" />
                 </LinearLayout>
+
+                <!-- Join Requests View -->
+                <LinearLayout
+                    android:id="@+id/layout_join_requests"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tv_no_join_req"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No pending join requests."
+                        android:gravity="center"
+                        android:padding="32dp"
+                        android:textColor="#666666"
+                        android:visibility="gone"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvJoinRequests"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+                </LinearLayout>
+
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

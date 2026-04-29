@@ -13,6 +13,7 @@ public class UserRecord {
     private String profilePicUrl;
     private List<String> subscribedCommunities;
     private List<String> joinedCenters;
+    private List<String> requestedCenters; // Added to track pending join requests
     private String recycleCenter; // Added for Admin users
     private int points;
     private int totalRecycled;
@@ -20,6 +21,7 @@ public class UserRecord {
     public UserRecord() {
         this.subscribedCommunities = new ArrayList<>();
         this.joinedCenters = new ArrayList<>();
+        this.requestedCenters = new ArrayList<>();
         this.points = 0;
         this.totalRecycled = 0;
         this.recycleCenter = "";
@@ -35,6 +37,7 @@ public class UserRecord {
         this.profilePicUrl = "";
         this.subscribedCommunities = new ArrayList<>();
         this.joinedCenters = new ArrayList<>();
+        this.requestedCenters = new ArrayList<>();
         this.points = 0;
         this.totalRecycled = 0;
         this.recycleCenter = "";
@@ -67,6 +70,9 @@ public class UserRecord {
 
     public List<String> getJoinedCenters() { return joinedCenters; }
     public void setJoinedCenters(List<String> joinedCenters) { this.joinedCenters = joinedCenters; }
+
+    public List<String> getRequestedCenters() { return requestedCenters; }
+    public void setRequestedCenters(List<String> requestedCenters) { this.requestedCenters = requestedCenters; }
 
     public String getRecycleCenter() { return recycleCenter; }
     public void setRecycleCenter(String recycleCenter) { this.recycleCenter = recycleCenter; }

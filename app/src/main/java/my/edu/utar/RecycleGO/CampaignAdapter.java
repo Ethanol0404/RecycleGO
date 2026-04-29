@@ -2,8 +2,8 @@ package my.edu.utar.RecycleGO;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,10 +14,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.bumptech.glide.Glide;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import my.edu.utar.RecycleGO.database.CampaignRecord;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
-import my.edu.utar.RecycleGO.database.UserRecord;
 import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -98,7 +94,7 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             AppCompatActivity activity = (AppCompatActivity) context;
             ParticipantsFragment fragment = ParticipantsFragment.newInstance(participantIds);
             activity.getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, fragment) // Assuming R.id.fragment_container is your main container
+                    .replace(R.id.fragment_container, fragment)
                     .addToBackStack(null)
                     .commit();
         }
@@ -125,7 +121,7 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             tvTitle.setText(item.getTitle());
             tvLoc.setText(item.getLocation());
             
-            ImageManager.loadImage(itemView.getContext(), item.getImageUrl(), ivCampaign);
+            ImageManager.loadImage(itemView.getContext(), item.getImageUrl(), ivCampaign, R.drawable.campaign);
 
             if (item.getDate() != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("d MMMM yyyy, h:mm a", Locale.getDefault());
@@ -138,12 +134,28 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             String currentUid = prefs.getString("loggedInUid", "");
             String userRole = prefs.getString("loggedInRole", "User");
 
+            // Apply Theme
+            SharedPreferences appPrefs = itemView.getContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+            String bottomColorCode = appPrefs.getString("bottom_color", "#265200");
+            int bottomColor = Color.parseColor(bottomColorCode);
+            
+            btnJoin.setBackgroundTintList(ColorStateList.valueOf(bottomColor));
+            tvTitle.setTextColor(bottomColor);
+
             if ("Admin".equalsIgnoreCase(userRole)) {
-                btnJoin.setText("View Participants");
-                btnJoin.setEnabled(true);
-                btnJoin.setAlpha(1.0f);
-                btnJoin.setOnClickListener(v -> openParticipantsFragment(itemView.getContext(), item.getParticipants()));
+                // Check if this admin is the creator of the campaign
+                if (currentUid.equals(item.getCreatedBy())) {
+                    btnJoin.setText("View Participants");
+                    btnJoin.setEnabled(true);
+                    btnJoin.setAlpha(1.0f);
+                    btnJoin.setOnClickListener(v -> openParticipantsFragment(itemView.getContext(), item.getParticipants()));
+                    btnJoin.setVisibility(View.VISIBLE);
+                } else {
+                    // Hide for other admins
+                    btnJoin.setVisibility(View.GONE);
+                }
             } else {
+                btnJoin.setVisibility(View.VISIBLE);
                 if (item.getParticipants() != null && item.getParticipants().contains(currentUid)) {
                     btnJoin.setText("Joined");
                     btnJoin.setEnabled(false);
@@ -194,14 +206,14 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ivCampaign = itemView.findViewById(R.id.iv_campaign);
             btnJoin = itemView.findViewById(R.id.btn_join);
             
-            ivCampaign.getLayoutParams().height = (int) (120 * itemView.getContext().getResources().getDisplayMetrics().density);
+            ivCampaign.getLayoutParams().height = (int) (180 * itemView.getContext().getResources().getDisplayMetrics().density);
         }
 
         public void bind(CampaignRecord item) {
             tvTitle.setText(item.getTitle());
             tvLoc.setText(item.getLocation());
 
-            ImageManager.loadImage(itemView.getContext(), item.getImageUrl(), ivCampaign);
+            ImageManager.loadImage(itemView.getContext(), item.getImageUrl(), ivCampaign, R.drawable.campaign);
 
             if (item.getDate() != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("d MMM yyyy", Locale.getDefault());
@@ -214,12 +226,28 @@ public class CampaignAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             String currentUid = prefs.getString("loggedInUid", "");
             String userRole = prefs.getString("loggedInRole", "User");
 
+            // Apply Theme
+            SharedPreferences appPrefs = itemView.getContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+            String bottomColorCode = appPrefs.getString("bottom_color", "#265200");
+            int bottomColor = Color.parseColor(bottomColorCode);
+            
+            btnJoin.setBackgroundTintList(ColorStateList.valueOf(bottomColor));
+            tvTitle.setTextColor(bottomColor);
+
             if ("Admin".equalsIgnoreCase(userRole)) {
-                btnJoin.setText("View Participants");
-                btnJoin.setEnabled(true);
-                btnJoin.setAlpha(1.0f);
-                btnJoin.setOnClickListener(v -> openParticipantsFragment(itemView.getContext(), item.getParticipants()));
+                // Check if this admin is the creator of the campaign
+                if (currentUid.equals(item.getCreatedBy())) {
+                    btnJoin.setText("View Participants");
+                    btnJoin.setEnabled(true);
+                    btnJoin.setAlpha(1.0f);
+                    btnJoin.setOnClickListener(v -> openParticipantsFragment(itemView.getContext(), item.getParticipants()));
+                    btnJoin.setVisibility(View.VISIBLE);
+                } else {
+                    // Hide for other admins
+                    btnJoin.setVisibility(View.GONE);
+                }
             } else {
+                btnJoin.setVisibility(View.VISIBLE);
                 if (item.getParticipants() != null && item.getParticipants().contains(currentUid)) {
                     btnJoin.setText("Joined");
                     btnJoin.setEnabled(false);

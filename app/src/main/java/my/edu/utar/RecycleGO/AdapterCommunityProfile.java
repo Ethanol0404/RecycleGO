@@ -12,6 +12,7 @@ import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import my.edu.utar.RecycleGO.database.CommunityModel;
+import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class AdapterCommunityProfile extends RecyclerView.Adapter<AdapterCommunityProfile.ViewHolder> {
 
@@ -39,7 +40,8 @@ public class AdapterCommunityProfile extends RecyclerView.Adapter<AdapterCommuni
         CommunityModel community = communityList.get(position);
         holder.tvName.setText(community.getName());
 
-        my.edu.utar.RecycleGO.utils.ImageManager.loadImage(holder.itemView.getContext(), community.getIconUrl(), holder.ivIcon);
+        // Use R.drawable.place as default for community icon
+        ImageManager.loadImage(holder.itemView.getContext(), community.getIconUrl(), holder.ivIcon, R.drawable.place);
 
         holder.itemView.setOnClickListener(v -> listener.onCommunityClick(community));
     }

@@ -1,11 +1,16 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -29,6 +34,7 @@ public class ChatDirectActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
         setContentView(R.layout.activity_chat_direct);
 
         requestId = getIntent().getStringExtra("requestId");
@@ -39,7 +45,7 @@ public class ChatDirectActivity extends AppCompatActivity {
         }
 
         firestoreManager = new FirestoreManager();
-        android.content.SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         userId = prefs.getString("loggedInUid", "");
         username = prefs.getString("loggedInUsername", "User");
         userRole = prefs.getString("loggedInRole", "User");
@@ -65,8 +71,32 @@ public class ChatDirectActivity extends AppCompatActivity {
             }
         });
 
+        applyCustomTheme();
         listenForMessages();
         markAsRead();
+    }
+
+    private void applyCustomTheme() {
+        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        String bgColorCode = prefs.getString("theme_color", "#D1E29B");
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int bgColor = Color.parseColor(bgColorCode);
+        int bottomColor = Color.parseColor(bottomColorCode);
+
+        // Set Status Bar and Navigation Bar color
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(bottomColor);
+        window.setNavigationBarColor(bottomColor);
+
+        findViewById(android.R.id.content).getRootView().setBackgroundColor(bgColor);
+        
+        android.view.View toolbar = findViewById(R.id.chat_toolbar);
+        android.view.View inputArea = findViewById(R.id.layout_input);
+        
+        if (toolbar != null) toolbar.setBackgroundColor(bottomColor);
+        if (inputArea != null) inputArea.setBackgroundColor(bottomColor);
+        if (recyclerView != null) recyclerView.setBackgroundColor(bgColor);
     }
 
     private void markAsRead() {
@@ -79,7 +109,7 @@ public class ChatDirectActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                 etMessage.setText("");
-                markAsRead(); // Update last read when sending too
+                markAsRead();
             }
             @Override
             public void onFailure(String error) {
@@ -99,8 +129,6 @@ public class ChatDirectActivity extends AppCompatActivity {
                         }
                         adapter.updateList(newList);
                         recyclerView.scrollToPosition(newList.size() - 1);
-
-                        // If activity is in foreground, mark as read
                         markAsRead();
                     }
                 });

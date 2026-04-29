@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#D1E29B"
+    android:background="@android:color/transparent"
     tools:context=".CreateCampaignActivity">
 
     <ImageButton
@@ -80,8 +80,7 @@
                 android:drawablePadding="12dp"
                 android:hint="Where is the event?"
                 android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                app:drawableTint="#2E7D32" />
+                android:paddingEnd="16dp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -103,8 +102,7 @@
                 android:focusable="false"
                 android:hint="Select Date and Time"
                 android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                app:drawableTint="#2E7D32" />
+                android:paddingEnd="16dp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -128,8 +126,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="center"
-                    android:src="@drawable/add_photo"
-                    app:tint="#2E7D32" />
+                    android:src="@drawable/add_photo" />
             </androidx.cardview.widget.CardView>
 
             <Button

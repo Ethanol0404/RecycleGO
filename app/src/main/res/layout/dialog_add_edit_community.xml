@@ -1,20 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="20dp"
-    android:background="#D1E29B">
+    android:background="#254E00">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Community Details"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="12dp"
+        android:textColorHint="#CCCCCC"
+        app:hintTextColor="#FFFFFF">
         <EditText
             android:id="@+id/dialog_comm_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Community Name"
+            android:textColor="#000000"
+            android:backgroundTint="#FFFFFF"
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -25,13 +39,14 @@
         android:gravity="center_vertical"
         android:layout_marginBottom="16dp">
 
-        <ImageView
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/dialog_comm_icon_preview"
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:src="@drawable/community"
-            android:scaleType="centerCrop"
-            android:background="#E0E0E0" />
+            app:civ_border_color="#FFFFFF"
+            app:civ_border_width="2dp"
+            app:civ_circle_background_color="#E0E0E0" />
 
         <Button
             android:id="@+id/btn_pick_comm_icon"
@@ -39,19 +54,17 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:text="Choose Icon"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#1A2A4E"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
     </LinearLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+    <EditText
+        android:id="@+id/dialog_comm_icon"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="gone">
-        <EditText
-            android:id="@+id/dialog_comm_icon"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Icon URL (Hidden)"
-            android:inputType="textUri" />
-    </com.google.android.material.textfield.TextInputLayout>
+        android:visibility="gone"
+        android:hint="Icon URL (Hidden)"
+        android:inputType="textUri" />
 
 </LinearLayout>

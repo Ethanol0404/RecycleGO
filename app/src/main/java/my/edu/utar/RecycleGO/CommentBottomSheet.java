@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,12 +35,14 @@ import java.util.UUID;
 
 import my.edu.utar.RecycleGO.database.CommunityComment;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
 import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class CommentBottomSheet extends BottomSheetDialogFragment {
 
     private String postID;
-    private String authorName; // Logged in user name
+    private String currentUserName = "Anonymous";
+    private String currentUserUID;
     private RecyclerView rvComments;
     private EditText etComment;
     private ImageView ivPreview;
@@ -86,9 +89,8 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
         // Required empty constructor
     }
 
-    public CommentBottomSheet(String postID, String authorName) {
+    public CommentBottomSheet(String postID) {
         this.postID = postID;
-        this.authorName = authorName;
     }
 
     @Nullable
@@ -97,6 +99,22 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
         View view = inflater.inflate(R.layout.bottom_sheet_comment, container, false);
 
         firestoreManager = new FirestoreManager();
+        currentUserUID = FirebaseAuth.getInstance().getUid();
+        
+        if (currentUserUID != null) {
+            firestoreManager.getUser(currentUserUID, new FirestoreManager.OnUserFetchListener() {
+                @Override
+                public void onUserFetched(UserRecord user) {
+                    if (user != null) {
+                        currentUserName = user.getUsername();
+                    }
+                }
+
+                @Override
+                public void onFailure(String error) {}
+            });
+        }
+
         rvComments = view.findViewById(R.id.rv_comments);
         etComment = view.findViewById(R.id.et_comment);
         ivPreview = view.findViewById(R.id.iv_comment_preview);
@@ -171,13 +189,18 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void addComment(String text) {
+        if (currentUserUID == null) {
+            Toast.makeText(getContext(), "You must be logged in to comment", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String commentID = UUID.randomUUID().toString();
         String photoUrl = null;
         if (selectedImageUri != null) {
             photoUrl = ImageManager.saveImageToInternalStorage(requireContext(), selectedImageUri);
         }
 
-        CommunityComment comment = new CommunityComment(commentID, postID, authorName, text);
+        CommunityComment comment = new CommunityComment(commentID, postID, currentUserUID, currentUserName, text);
         comment.setPhotoUrl(photoUrl);
 
         firestoreManager.addComment(comment, new FirestoreManager.OnTaskCompleteListener() {

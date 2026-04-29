@@ -10,11 +10,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
-
 import java.util.List;
 
 import my.edu.utar.RecycleGO.database.CommunityModel;
+import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class AdapterManageCommunity extends RecyclerView.Adapter<AdapterManageCommunity.ViewHolder> {
 
@@ -50,7 +49,8 @@ public class AdapterManageCommunity extends RecyclerView.Adapter<AdapterManageCo
         holder.tvName.setText(community.getName());
         holder.tvId.setText("ID: " + community.getCommunityID());
 
-        my.edu.utar.RecycleGO.utils.ImageManager.loadImage(holder.itemView.getContext(), community.getIconUrl(), holder.imgIcon);
+        // Use R.drawable.place as default for community icon
+        ImageManager.loadImage(holder.itemView.getContext(), community.getIconUrl(), holder.imgIcon, R.drawable.place);
 
         holder.btnEdit.setOnClickListener(v -> {
             if (listener != null) listener.onEdit(community);

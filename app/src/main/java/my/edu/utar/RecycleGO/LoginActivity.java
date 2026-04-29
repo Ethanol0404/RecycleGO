@@ -2,16 +2,24 @@ package my.edu.utar.RecycleGO;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -21,6 +29,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
+import my.edu.utar.RecycleGO.utils.PrivacyPolicyHelper;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -28,6 +37,7 @@ public class LoginActivity extends AppCompatActivity {
     Button btnLogin, btnCreateAccount;
     EditText etLoginEmail, etLoginPassword;
     Spinner spinnerRole;
+    CheckBox cbLoginAgree;
     FirestoreManager firestoreManager;
     FirebaseAuth mAuth;
 
@@ -51,8 +61,30 @@ public class LoginActivity extends AppCompatActivity {
         etLoginEmail = findViewById(R.id.etLoginEmail);
         etLoginPassword = findViewById(R.id.etLoginPassword);
         spinnerRole = findViewById(R.id.spinnerRole);
+        cbLoginAgree = findViewById(R.id.cbLoginAgree);
 
-        // Setup Spinner
+        // Setup Hyperlink for Privacy Policy
+        String text = "I agree to the Privacy Policy";
+        SpannableString ss = new SpannableString(text);
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                PrivacyPolicyHelper.showPrivacyPolicy(LoginActivity.this, cbLoginAgree);
+            }
+
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setColor(Color.parseColor("#2D5D5B")); // Dark Green
+                ds.setUnderlineText(true);
+                ds.setFakeBoldText(true); // Bold
+            }
+        };
+        ss.setSpan(clickableSpan, 15, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        cbLoginAgree.setText(ss);
+        cbLoginAgree.setMovementMethod(LinkMovementMethod.getInstance());
+
+        // Setup Role Spinner
         String[] roles = {"User", "Admin"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roles);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -68,6 +100,11 @@ public class LoginActivity extends AppCompatActivity {
 
                 if (email.isEmpty() || password.isEmpty()) {
                     Toast.makeText(LoginActivity.this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (!cbLoginAgree.isChecked()) {
+                    Toast.makeText(LoginActivity.this, "Please read and agree to the Privacy Policy", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -87,6 +124,7 @@ public class LoginActivity extends AppCompatActivity {
                                         editor.putString("loggedInUid", user.getUid());
                                         editor.putString("loggedInUsername", user.getUsername());
                                         editor.putString("loggedInRole", user.getRole());
+                                        editor.putBoolean("privacyAgreed", true); // Save agreement state
                                         editor.apply();
 
                                         Toast.makeText(LoginActivity.this, "Login Successful as " + user.getRole(), Toast.LENGTH_SHORT).show();
@@ -108,7 +146,7 @@ public class LoginActivity extends AppCompatActivity {
                             });
                         } else {
                             Log.e(TAG, "Auth Failed", task.getException());
-                            Toast.makeText(LoginActivity.this, "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                            Toast.makeText(LoginActivity.this, "Role mismatch or user not found", Toast.LENGTH_LONG).show();
                         }
                     });
             }

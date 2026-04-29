@@ -3,4 +3,5 @@
     <external-path name="my_images" path="Android/data/my.edu.utar.RecycleGO/files/Pictures" />
     <external-files-path name="my_external_files" path="Pictures" />
     <files-path name="my_internal_files" path="." />
+    <cache-path name="my_cache_files" path="." />
 </paths>

@@ -4,22 +4,29 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.bumptech.glide.Glide;
 import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.formatter.PercentFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.firestore.ListenerRegistration;
 
@@ -27,10 +34,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class RewardsActivity extends Fragment {
+
+    private static final String TAG = "RewardsActivity";
 
     private TextView txtPoints, txtTreesSaved;
     private PieChart pieChart;
@@ -41,10 +51,12 @@ public class RewardsActivity extends Fragment {
     private TextView txtRank2Name, txtRank2Points;
     private TextView txtRank3Name, txtRank3Points;
     private TextView txtCurrentUserPoints, txtCurrentUserNameRank, txtCurrentRank;
+    private CircleImageView imgRank1, imgRank2, imgRank3, imgCurrentUserRank;
 
     private FirestoreManager firestoreManager;
     private String currentUserId;
     private ListenerRegistration userListener;
+    private int currentBottomColor = Color.BLACK;
 
     @Nullable
     @Override
@@ -69,10 +81,15 @@ public class RewardsActivity extends Fragment {
         txtRank2Points = view.findViewById(R.id.txt_rank2_points);
         txtRank3Name = view.findViewById(R.id.txt_rank3_name);
         txtRank3Points = view.findViewById(R.id.txt_rank3_points);
+        
+        imgRank1 = view.findViewById(R.id.img_rank1);
+        imgRank2 = view.findViewById(R.id.img_rank2);
+        imgRank3 = view.findViewById(R.id.img_rank3);
 
         txtCurrentUserPoints = view.findViewById(R.id.txt_current_user_points);
         txtCurrentUserNameRank = view.findViewById(R.id.txt_current_user_name_rank);
         txtCurrentRank = view.findViewById(R.id.txt_current_rank);
+        imgCurrentUserRank = view.findViewById(R.id.img_current_user_rank);
 
         firestoreManager = new FirestoreManager();
         
@@ -90,8 +107,52 @@ public class RewardsActivity extends Fragment {
         }
 
         setupPieChart();
+        applyCustomTheme(view);
 
         return view;
+    }
+
+    private void applyCustomTheme(View view) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String accentColorCode = prefs.getString("accent_color", "#1A2A4E");
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int accentColor = Color.parseColor(accentColorCode);
+        int bottomColor = Color.parseColor(bottomColorCode);
+        currentBottomColor = bottomColor;
+
+        ViewGroup root = (ViewGroup) view;
+        updateColorsRecursively(root, accentColor, bottomColor);
+
+        if (btnRedeem != null) btnRedeem.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bottomColor));
+        if (btnHistory != null) btnHistory.setBackgroundTintList(android.content.res.ColorStateList.valueOf(accentColor));
+        
+        if (pieChart != null) {
+            pieChart.setCenterTextColor(bottomColor);
+        }
+    }
+
+    private void updateColorsRecursively(ViewGroup parent, int accentColor, int bottomColor) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child instanceof ViewGroup) {
+                if (child instanceof androidx.cardview.widget.CardView) {
+                    androidx.cardview.widget.CardView card = (androidx.cardview.widget.CardView) child;
+                    if (card.getCardBackgroundColor().getDefaultColor() != Color.parseColor("#ADE3F2")) {
+                        card.setCardBackgroundColor(bottomColor);
+                    }
+                }
+                updateColorsRecursively((ViewGroup) child, accentColor, bottomColor);
+            } else if (child instanceof ImageView) {
+                ImageView iv = (ImageView) child;
+                if (iv.getId() != R.id.img_rank1 && iv.getId() != R.id.img_rank2 && 
+                    iv.getId() != R.id.img_rank3 && iv.getId() != R.id.img_current_user_rank &&
+                    iv.getId() != R.id.img_earth && iv.getId() != R.id.iv_rank_icon) {
+                    iv.setColorFilter(accentColor);
+                } else if (iv.getId() == R.id.iv_rank_icon) {
+                    iv.clearColorFilter();
+                }
+            }
+        }
     }
 
     private void setupPieChart() {
@@ -101,15 +162,15 @@ public class RewardsActivity extends Fragment {
         pieChart.setExtraOffsets(5, 10, 5, 5);
         pieChart.setDragDecelerationFrictionCoef(0.95f);
         pieChart.setDrawHoleEnabled(true);
-        pieChart.setHoleColor(Color.WHITE);
+        pieChart.setHoleColor(Color.TRANSPARENT);
+        pieChart.setHoleRadius(58f);
         pieChart.setTransparentCircleRadius(61f);
+        pieChart.setDrawCenterText(true);
         
-        // Disable labels by default to only show on tap
         pieChart.setDrawEntryLabels(false);
         pieChart.setEntryLabelColor(Color.BLACK);
         pieChart.setEntryLabelTextSize(12f);
 
-        // Legend configuration
         pieChart.getLegend().setEnabled(true);
         pieChart.getLegend().setWordWrapEnabled(true);
     }
@@ -139,10 +200,19 @@ public class RewardsActivity extends Fragment {
                     if (txtPoints != null) txtPoints.setText(String.valueOf(userRecord.getPoints()));
                     if (txtCurrentUserNameRank != null) txtCurrentUserNameRank.setText(userRecord.getUsername());
                     if (txtCurrentUserPoints != null) txtCurrentUserPoints.setText(String.valueOf(userRecord.getPoints()));
+                    
+                    if (imgCurrentUserRank != null && userRecord.getProfilePicUrl() != null && !userRecord.getProfilePicUrl().isEmpty()) {
+                        Glide.with(RewardsActivity.this)
+                                .load(userRecord.getProfilePicUrl())
+                                .placeholder(R.drawable.useravatar)
+                                .into(imgCurrentUserRank);
+                    }
                 }
             }
             @Override
-            public void onFailure(String error) {}
+            public void onFailure(String error) {
+                Log.e(TAG, "Error listening to user: " + error);
+            }
         });
 
         firestoreManager.getMaterialStats(currentUserId, new FirestoreManager.OnMaterialStatsFetchListener() {
@@ -160,7 +230,12 @@ public class RewardsActivity extends Fragment {
                 if (isAdded()) updateRanking(list);
             }
             @Override
-            public void onFailure(String error) {}
+            public void onFailure(String error) {
+                Log.e(TAG, "Error fetching rankings: " + error);
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Failed to load rankings. Check Firestore indexes.", Toast.LENGTH_SHORT).show();
+                }
+            }
         });
     }
 
@@ -173,35 +248,32 @@ public class RewardsActivity extends Fragment {
             for (int i = 0; i < materials.size(); i++) {
                 String material = materials.get(i);
                 long count = counts.get(i);
-
                 entries.add(new PieEntry(count, material));
 
-                // Logic for tree counting and specific colors
                 if (material.equalsIgnoreCase("Plastic")) {
                     totalTrees += count * 10;
-                    colors.add(Color.parseColor("#2196F3")); // Blue
+                    colors.add(Color.parseColor("#2196F3"));
                 } else if (material.equalsIgnoreCase("Paper")) {
                     totalTrees += count * 5;
-                    colors.add(Color.parseColor("#FFEB3B")); // Yellow
+                    colors.add(Color.parseColor("#FFEB3B"));
                 } else if (material.equalsIgnoreCase("Metal")) {
                     totalTrees += count * 8;
-                    colors.add(Color.parseColor("#9E9E9E")); // Grey
+                    colors.add(Color.parseColor("#9E9E9E"));
                 } else if (material.equalsIgnoreCase("E-Waste")) {
                     totalTrees += count * 15;
-                    colors.add(Color.parseColor("#9C27B0")); // Purple
+                    colors.add(Color.parseColor("#9C27B0"));
                 } else if (material.equalsIgnoreCase("Clothing") || material.equalsIgnoreCase("Textile")) {
                     totalTrees += count * 4;
-                    colors.add(Color.parseColor("#795548")); // Brown
+                    colors.add(Color.parseColor("#795548"));
                 } else if (material.equalsIgnoreCase("Household Waste")) {
                     totalTrees += count * 2;
-                    colors.add(Color.parseColor("#4CAF50")); // Green
+                    colors.add(Color.parseColor("#4CAF50"));
                 } else {
                     totalTrees += count * 2;
                     colors.add(ColorTemplate.JOYFUL_COLORS[i % ColorTemplate.JOYFUL_COLORS.length]);
                 }
             }
         } else {
-            // If no data, show an empty placeholder slice
             entries.add(new PieEntry(1f, "No Data"));
             colors.add(Color.LTGRAY);
         }
@@ -216,28 +288,21 @@ public class RewardsActivity extends Fragment {
         dataSet.setSliceSpace(3f);
         dataSet.setSelectionShift(8f);
         dataSet.setColors(colors);
-        
-        // Setup line position but hide by default
         dataSet.setDrawValues(false);
-        dataSet.setValueLinePart1OffsetPercentage(80f);
-        dataSet.setValueLinePart1Length(0.2f);
-        dataSet.setValueLinePart2Length(0.4f);
-        dataSet.setYValuePosition(PieDataSet.ValuePosition.OUTSIDE_SLICE);
 
         PieData data = new PieData(dataSet);
         data.setValueFormatter(new PercentFormatter(pieChart));
-        data.setValueTextSize(spToPx(12));
+        data.setValueTextSize(12f);
         data.setValueTextColor(Color.BLACK);
 
         pieChart.setData(data);
-        
-        // Hide labels and values initially
         pieChart.setDrawEntryLabels(false);
-        dataSet.setDrawValues(false); 
-        
-        pieChart.setOnChartValueSelectedListener(new com.github.mikephil.charting.listener.OnChartValueSelectedListener() {
+        pieChart.setCenterTextColor(currentBottomColor);
+
+        // Add Listener to show details when tapped
+        pieChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
-            public void onValueSelected(com.github.mikephil.charting.data.Entry e, com.github.mikephil.charting.highlight.Highlight h) {
+            public void onValueSelected(Entry e, Highlight h) {
                 if (e instanceof PieEntry) {
                     PieEntry pe = (PieEntry) e;
                     if (pe.getLabel().equals("No Data")) {
@@ -270,31 +335,56 @@ public class RewardsActivity extends Fragment {
     }
 
     private void updateRanking(List<UserRecord> list) {
-        if (list.size() >= 1 && txtRank1Name != null && txtRank1Points != null) {
+        if (list == null) return;
+
+        // Top 3 ranking
+        if (list.size() >= 1 && txtRank1Name != null) {
             txtRank1Name.setText(list.get(0).getUsername());
             txtRank1Points.setText(String.valueOf(list.get(0).getPoints()));
+            loadAvatarToRanking(list.get(0).getProfilePicUrl(), imgRank1);
         }
-        if (list.size() >= 2 && txtRank2Name != null && txtRank2Points != null) {
+        if (list.size() >= 2 && txtRank2Name != null) {
             txtRank2Name.setText(list.get(1).getUsername());
             txtRank2Points.setText(String.valueOf(list.get(1).getPoints()));
+            loadAvatarToRanking(list.get(1).getProfilePicUrl(), imgRank2);
         }
-        if (list.size() >= 3 && txtRank3Name != null && txtRank3Points != null) {
+        if (list.size() >= 3 && txtRank3Name != null) {
             txtRank3Name.setText(list.get(2).getUsername());
             txtRank3Points.setText(String.valueOf(list.get(2).getPoints()));
+            loadAvatarToRanking(list.get(2).getProfilePicUrl(), imgRank3);
         }
 
-        if (txtCurrentRank != null) {
+        // Current user rank
+        if (txtCurrentRank != null && currentUserId != null) {
+            boolean found = false;
             for (int i = 0; i < list.size(); i++) {
-                if (list.get(i).getUid().equals(currentUserId)) {
+                UserRecord user = list.get(i);
+                if (user.getUid() != null && user.getUid().equals(currentUserId)) {
                     int rank = i + 1;
-                    String suffix = "th";
-                    if (rank == 1) suffix = "st";
-                    else if (rank == 2) suffix = "nd";
-                    else if (rank == 3) suffix = "rd";
-                    txtCurrentRank.setText(rank + suffix);
+                    txtCurrentRank.setText(rank + getRankSuffix(rank));
+                    found = true;
                     break;
                 }
             }
+            if (!found) txtCurrentRank.setText("-");
+        }
+    }
+
+    private String getRankSuffix(int rank) {
+        if (rank >= 11 && rank <= 13) return "th";
+        switch (rank % 10) {
+            case 1: return "st";
+            case 2: return "nd";
+            case 3: return "rd";
+            default: return "th";
+        }
+    }
+
+    private void loadAvatarToRanking(String url, CircleImageView iv) {
+        if (url != null && !url.isEmpty() && isAdded()) {
+            Glide.with(this).load(url).placeholder(R.drawable.useravatar).into(iv);
+        } else if (iv != null) {
+            iv.setImageResource(R.drawable.useravatar);
         }
     }
 }

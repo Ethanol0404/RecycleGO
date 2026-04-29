@@ -3,6 +3,7 @@ package my.edu.utar.RecycleGO.database;
 public class CommunityComment {
     private String commentID;
     private String postID;
+    private String authorUID;
     private String authorName;
     private String text;
     private String photoUrl; // Added photo support
@@ -10,9 +11,10 @@ public class CommunityComment {
 
     public CommunityComment() {}
 
-    public CommunityComment(String commentID, String postID, String authorName, String text) {
+    public CommunityComment(String commentID, String postID, String authorUID, String authorName, String text) {
         this.commentID = commentID;
         this.postID = postID;
+        this.authorUID = authorUID;
         this.authorName = authorName;
         this.text = text;
         this.timestamp = System.currentTimeMillis();
@@ -23,6 +25,9 @@ public class CommunityComment {
 
     public String getPostID() { return postID; }
     public void setPostID(String postID) { this.postID = postID; }
+
+    public String getAuthorUID() { return authorUID; }
+    public void setAuthorUID(String authorUID) { this.authorUID = authorUID; }
 
     public String getAuthorName() { return authorName; }
     public void setAuthorName(String authorName) { this.authorName = authorName; }

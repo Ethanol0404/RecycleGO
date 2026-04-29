@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#D1E29B">
+    android:background="@color/theme_green_bg">
 
     <LinearLayout
         android:id="@+id/rewards_header"
@@ -20,7 +20,7 @@
             android:layout_height="28dp"
             android:src="@drawable/outline_arrow_drop_down_24"
             android:rotation="90"
-            app:tint="@color/black"
+            app:tint="@color/theme_accent_blue"
             android:contentDescription="Back" />
 
         <TextView
@@ -29,7 +29,7 @@
             android:text="Rewards"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="#1A237E"
+            android:textColor="@color/theme_accent_blue"
             android:layout_marginStart="8dp" />
     </LinearLayout>
 
@@ -74,7 +74,7 @@
                         android:text="1000"
                         android:textSize="48sp"
                         android:textStyle="bold"
-                        android:textColor="#2E7D32" />
+                        android:textColor="@color/theme_dark_green" />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -85,7 +85,7 @@
                 android:text="Available Rewards"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@color/black"
+                android:textColor="@color/theme_accent_blue"
                 android:layout_marginBottom="16dp" />
 
             <!-- Placeholder for Rewards List -->

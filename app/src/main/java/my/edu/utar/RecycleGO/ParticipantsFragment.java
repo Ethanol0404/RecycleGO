@@ -1,5 +1,8 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -58,6 +61,8 @@ public class ParticipantsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        applyCustomTheme(view);
+
         androidx.appcompat.widget.Toolbar toolbar = view.findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
 
@@ -71,9 +76,30 @@ public class ParticipantsFragment extends Fragment {
         loadParticipants();
     }
 
+    private void applyCustomTheme(View view) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String bgColorCode = prefs.getString("theme_color", "#D1E29B");
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int bgColor = Color.parseColor(bgColorCode);
+        int bottomColor = Color.parseColor(bottomColorCode);
+
+        view.setBackgroundColor(bgColor);
+
+        androidx.appcompat.widget.Toolbar toolbar = view.findViewById(R.id.toolbar);
+        if (toolbar != null) {
+            toolbar.setTitleTextColor(bottomColor);
+            if (toolbar.getNavigationIcon() != null) {
+                toolbar.getNavigationIcon().setTint(bottomColor);
+            }
+        }
+
+        TextView tvNo = view.findViewById(R.id.tv_no_participants);
+        if (tvNo != null) tvNo.setTextColor(bottomColor);
+    }
+
     private void loadParticipants() {
         if (participantIds == null || participantIds.isEmpty()) {
-            tvNoParticipants.setVisibility(View.VISIBLE);
+            if (tvNoParticipants != null) tvNoParticipants.setVisibility(View.VISIBLE);
             return;
         }
 
@@ -137,6 +163,15 @@ public class ParticipantsFragment extends Fragment {
             } else {
                 h.avatar.setImageResource(R.drawable.useravatar);
             }
+
+            // Apply Theme to item
+            SharedPreferences prefs = h.itemView.getContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+            String bottomColorCode = prefs.getString("bottom_color", "#265200");
+            int bottomColor = Color.parseColor(bottomColorCode);
+
+            h.name.setTextColor(bottomColor);
+            h.email.setTextColor(Color.argb(179, Color.red(bottomColor), Color.green(bottomColor), Color.blue(bottomColor)));
+            h.phone.setTextColor(Color.argb(179, Color.red(bottomColor), Color.green(bottomColor), Color.blue(bottomColor)));
         }
 
         @Override

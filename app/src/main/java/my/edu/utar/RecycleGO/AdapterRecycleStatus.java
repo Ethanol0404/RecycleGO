@@ -1,5 +1,8 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 import my.edu.utar.RecycleGO.database.RecycleRequest;
+import my.edu.utar.RecycleGO.utils.ImageManager;
 
 public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleStatus.ViewHolder> {
     private List<RecycleRequest> list;
@@ -55,26 +59,33 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
         RecycleRequest request = list.get(position);
         holder.tvId.setText( (request.getId() != null && request.getId().length() > 8 ? request.getId().substring(0, 8) : "N/A"));
         holder.tvItem.setText(request.getCategory());
-        holder.tvDate.setText(request.getDate());
+        holder.tvDate.setText("Date: " + request.getDate());
         holder.tvStatus.setText(request.getStatus());
         
         String centerName = request.getCenterName();
         String displayCenter = (centerName == null || centerName.isEmpty() || ("MULTIPLE".equals(request.getCenterId()) && "Requesting".equalsIgnoreCase(request.getStatus()))) 
                 ? "Multiple Centers" : centerName;
-        holder.tvCenter.setText(displayCenter);
+        holder.tvCenter.setText("Center: " + displayCenter);
         
         holder.itemView.setOnClickListener(v -> {
             if (actionListener != null) actionListener.onItemClick(request);
         });
         
-        // Image loading
-        if (request.getPhotoUrl() != null && !request.getPhotoUrl().isEmpty()) {
-            my.edu.utar.RecycleGO.utils.ImageManager.loadImage(holder.itemView.getContext(), request.getPhotoUrl(), holder.img);
-        } else {
-            holder.img.setImageResource(R.drawable.request); // Fallback
-        }
+        ImageManager.loadImage(holder.itemView.getContext(), request.getPhotoUrl(), holder.img, R.drawable.request);
 
-        // Hide simulation buttons to focus interaction on the detail pop-up as requested
+        // Theme Support
+        SharedPreferences prefs = holder.itemView.getContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int bottomColor = Color.parseColor(bottomColorCode);
+        
+        holder.tvItem.setTextColor(bottomColor);
+        holder.tvId.setTextColor(bottomColor);
+        holder.tvIdLabel.setTextColor(bottomColor);
+        holder.tvDate.setTextColor(bottomColor);
+        holder.tvCenter.setTextColor(bottomColor);
+        
+        holder.btnConfirmComplete.setBackgroundTintList(ColorStateList.valueOf(bottomColor));
+
         holder.btnConfirmComplete.setVisibility(View.GONE);
         holder.tvPointsEarned.setVisibility(View.GONE);
 
@@ -111,7 +122,7 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvId, tvItem, tvDate, tvStatus, tvCenter;
+        TextView tvId, tvIdLabel, tvItem, tvDate, tvStatus, tvCenter;
         ImageView img;
         CardView card;
         Button btnConfirmComplete;
@@ -120,6 +131,7 @@ public class AdapterRecycleStatus extends RecyclerView.Adapter<AdapterRecycleSta
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvId = itemView.findViewById(R.id.recycle_status_id);
+            tvIdLabel = itemView.findViewById(R.id.recycle_status_id_label);
             tvItem = itemView.findViewById(R.id.recycle_status_item);
             tvDate = itemView.findViewById(R.id.recycle_status_date);
             tvStatus = itemView.findViewById(R.id.recycle_status_status);

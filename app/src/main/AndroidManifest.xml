@@ -26,12 +26,6 @@
             android:theme="@style/Theme.GROUPASGN"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".HomeFragment"
-            android:exported="false" />
-        <activity
-            android:name=".ActivityFragment"
-            android:exported="false" />
-        <activity
             android:name=".LaunchActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting">
@@ -49,12 +43,6 @@
             android:name=".SignUpActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".UserProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SplashActivity"
-            android:exported="false" />
         <activity
             android:name=".FrameActivity"
             android:exported="false"

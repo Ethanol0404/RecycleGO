@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import my.edu.utar.RecycleGO.database.CommunityModel;
 import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
 
 public class CommunitySearchActivity extends AppCompatActivity {
 
@@ -44,6 +45,7 @@ public class CommunitySearchActivity extends AppCompatActivity {
         adapter = new AdapterCommunitySearch(new ArrayList<>(), userUid);
         rvResults.setAdapter(adapter);
 
+        loadUserData();
         loadCommunities();
 
         etSearch.addTextChangedListener(new TextWatcher() {
@@ -57,6 +59,21 @@ public class CommunitySearchActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void loadUserData() {
+        if (userUid.isEmpty()) return;
+        firestoreManager.getUser(userUid, new FirestoreManager.OnUserFetchListener() {
+            @Override
+            public void onUserFetched(UserRecord user) {
+                if (user != null) {
+                    adapter.setSubscribedCommunities(user.getSubscribedCommunities());
+                }
+            }
+
+            @Override
+            public void onFailure(String error) {}
         });
     }
 

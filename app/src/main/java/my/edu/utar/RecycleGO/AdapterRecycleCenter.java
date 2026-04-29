@@ -1,5 +1,9 @@
 package my.edu.utar.RecycleGO;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,11 +23,14 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
     private OnItemClickListener listener;
     private boolean isAdmin = false;
     private List<String> joinedCenters = new java.util.ArrayList<>();
+    private List<String> requestedCenters = new java.util.ArrayList<>();
     private List<String> selectedCenterIds = new java.util.ArrayList<>();
 
     public interface OnItemClickListener {
         void onItemClick(RecycleCenter center);
         void onRecycleClick(RecycleCenter center);
+        void onViewRequestsClick(RecycleCenter center);
+        void onDetailsClick(RecycleCenter center);
     }
 
     public AdapterRecycleCenter(List<RecycleCenter> centers, OnItemClickListener listener) {
@@ -39,6 +46,13 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
     public void setJoinedCenters(List<String> joinedCenters) {
         if (joinedCenters != null) {
             this.joinedCenters = joinedCenters;
+            notifyDataSetChanged();
+        }
+    }
+
+    public void setRequestedCenters(List<String> requestedCenters) {
+        if (requestedCenters != null) {
+            this.requestedCenters = requestedCenters;
             notifyDataSetChanged();
         }
     }
@@ -70,29 +84,49 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
 
         holder.itemView.setOnClickListener(v -> listener.onItemClick(center));
         holder.btnMore.setOnClickListener(v -> {
-            listener.onItemClick(center); // Trigger focus
+            listener.onDetailsClick(center);
         });
+
+        // Theme Support
+        SharedPreferences appPrefs = holder.itemView.getContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String bottomColorCode = appPrefs.getString("bottom_color", "#265200");
+        int bottomColor = Color.parseColor(bottomColorCode);
+        
+        holder.title.setTextColor(bottomColor);
+        holder.btnMore.setBackgroundTintList(ColorStateList.valueOf(bottomColor));
 
         if (isAdmin) {
             if (joinedCenters.contains(center.id)) {
                 holder.btnRecycle.setText("Joined");
-                holder.btnRecycle.setEnabled(false);
+                holder.btnRecycle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+                holder.btnRecycle.setEnabled(true);
+                holder.btnViewRequests.setVisibility(View.VISIBLE);
+                holder.btnViewRequests.setTextColor(bottomColor);
+            } else if (requestedCenters.contains(center.id)) {
+                holder.btnRecycle.setText("Requested");
+                holder.btnRecycle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+                holder.btnRecycle.setEnabled(true);
+                holder.btnViewRequests.setVisibility(View.GONE);
             } else {
                 holder.btnRecycle.setText("Join");
+                holder.btnRecycle.setBackgroundTintList(ColorStateList.valueOf(bottomColor));
                 holder.btnRecycle.setEnabled(true);
+                holder.btnViewRequests.setVisibility(View.GONE);
             }
         } else {
             if (selectedCenterIds.contains(center.id)) {
                 holder.btnRecycle.setText("Selected");
-                holder.btnRecycle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50")));
+                holder.btnRecycle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
             } else {
                 holder.btnRecycle.setText("Recycle");
-                holder.btnRecycle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2E6A5E")));
+                holder.btnRecycle.setBackgroundTintList(ColorStateList.valueOf(bottomColor));
             }
             holder.btnRecycle.setEnabled(true);
+            holder.btnViewRequests.setVisibility(View.GONE);
         }
         
         holder.btnRecycle.setOnClickListener(v -> listener.onRecycleClick(center));
+        holder.btnViewRequests.setOnClickListener(v -> listener.onViewRequestsClick(center));
     }
 
     @Override
@@ -100,7 +134,7 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView title, description, subDescription;
-        Button btnMore, btnRecycle;
+        Button btnMore, btnRecycle, btnViewRequests;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -109,6 +143,7 @@ public class AdapterRecycleCenter extends RecyclerView.Adapter<AdapterRecycleCen
             subDescription = itemView.findViewById(R.id.bubble_subdescription);
             btnMore = itemView.findViewById(R.id.bubble_moreinfo);
             btnRecycle = itemView.findViewById(R.id.bubble_recycle);
+            btnViewRequests = itemView.findViewById(R.id.btn_view_requests);
         }
     }
 }

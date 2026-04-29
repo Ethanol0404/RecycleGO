@@ -50,7 +50,7 @@
             android:id="@+id/btn_add_image"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@drawable/baseline_add_24"
+            app:srcCompat="@drawable/baseline_add_24"
             android:background="?attr/selectableItemBackgroundBorderless"
             app:tint="#2D6A4F"/>
 
@@ -68,7 +68,7 @@
             android:id="@+id/btn_send_comment"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@drawable/post_comment"
+            app:srcCompat="@drawable/baseline_send_24"
             android:background="?attr/selectableItemBackgroundBorderless"
             app:tint="#2D6A4F"/>
     </LinearLayout>

@@ -26,6 +26,11 @@ public class LaunchActivity extends AppCompatActivity {
         Animation rotate = AnimationUtils.loadAnimation(this, R.anim.rotate_infinitely);
         planet.startAnimation(rotate);
 
+        // Move to appropriate activity after 4 seconds
+        startAppWithDelay();
+    }
+
+    private void startAppWithDelay() {
         // Check if user is already logged in
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         boolean isLoggedIn = sharedPreferences.contains("loggedInEmail");

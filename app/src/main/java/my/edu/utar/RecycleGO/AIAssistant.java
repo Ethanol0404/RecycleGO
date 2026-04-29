@@ -9,7 +9,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -54,6 +56,10 @@ import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import my.edu.utar.RecycleGO.database.FirestoreManager;
+import my.edu.utar.RecycleGO.database.UserRecord;
+import my.edu.utar.RecycleGO.utils.ApiKeyManager;
+
 public class AIAssistant extends BottomSheetDialogFragment {
 
     private static final String TAG = "AIAssistant";
@@ -64,12 +70,10 @@ public class AIAssistant extends BottomSheetDialogFragment {
     private EditText editMessage;
     private ImageButton btnSend, btnMic, btnPlus;
     private TextView welcomeText;
+    private String userProfilePicUrl = "";
 
-    // Gemini AI Setup
     private GenerativeModelFutures model;
-    private final String API_KEY = BuildConfig.GEMINI_API_KEY;
 
-    // Camera Launcher
     private final ActivityResultLauncher<Intent> takePictureLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -81,7 +85,6 @@ public class AIAssistant extends BottomSheetDialogFragment {
             }
     );
 
-    // Gallery Launcher
     private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
@@ -91,7 +94,6 @@ public class AIAssistant extends BottomSheetDialogFragment {
             }
     );
 
-    // Voice Launcher
     private final ActivityResultLauncher<Intent> voiceInputLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -104,7 +106,6 @@ public class AIAssistant extends BottomSheetDialogFragment {
             }
     );
 
-    // Permission Launchers
     private final ActivityResultLauncher<String> cameraPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(),
             isGranted -> {
@@ -121,16 +122,51 @@ public class AIAssistant extends BottomSheetDialogFragment {
             }
     );
 
-    public AIAssistant() {
-        // Required empty public constructor
-    }
+    public AIAssistant() {}
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initializeModel();
+        loadUserProfile();
+    }
+
+    private void loadUserProfile() {
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String uid = prefs.getString("loggedInUid", "");
+        if (!uid.isEmpty()) {
+            new FirestoreManager().getUser(uid, new FirestoreManager.OnUserFetchListener() {
+                @Override
+                public void onUserFetched(UserRecord user) {
+                    if (user != null && isAdded()) {
+                        userProfilePicUrl = user.getProfilePicUrl();
+                        if (user.getUsername() != null) {
+                            String username = user.getUsername();
+                            if (welcomeText != null) {
+                                welcomeText.setText("Let’s Recycle,\n" + username + "!");
+                            }
+                            // Also update local preference for consistency
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putString("loggedInUsername", username);
+                            editor.apply();
+                        }
+                    }
+                }
+                @Override
+                public void onFailure(String error) {}
+            });
+        }
+    }
+
+    private void initializeModel() {
         try {
-            // Correctly initialize the class-level model field
-            GenerativeModel gm = new GenerativeModel("gemini-2.5-flash-lite", API_KEY);
+            String apiKey = ApiKeyManager.getCurrentKey(requireContext());
+            if (apiKey.isEmpty()) {
+                Log.e(TAG, "No API key found in ApiKeyManager!");
+                return;
+            }
+            // Using stable Gemini 1.5 Flash model
+            GenerativeModel gm = new GenerativeModel("gemini-2.5-flash-lite", apiKey);
             this.model = GenerativeModelFutures.from(gm);
         } catch (Exception e) {
             Log.e(TAG, "Gemini initialization failed", e);
@@ -149,21 +185,24 @@ public class AIAssistant extends BottomSheetDialogFragment {
             View bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
             if (bottomSheet != null) {
                 BottomSheetBehavior.from(bottomSheet).setState(BottomSheetBehavior.STATE_EXPANDED);
+                
+                // Set the background color of the bottom sheet itself
+                SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+                String bgColorCode = prefs.getString("theme_color", "#D1E29B");
+                bottomSheet.setBackgroundColor(Color.parseColor(bgColorCode));
             }
         });
         return dialog;
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_ai_assistant, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         recyclerView = view.findViewById(R.id.recycler_view_chat);
         scrollView = view.findViewById(R.id.scroll_view_content);
         editMessage = view.findViewById(R.id.edit_chat_message);
@@ -180,32 +219,17 @@ public class AIAssistant extends BottomSheetDialogFragment {
 
         chatMessages = new ArrayList<>();
         adapter = new ChatAdapter(chatMessages);
-
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
 
         if (chatMessages.isEmpty()) {
-            addMessage("♻️ Hi! I'm RecycleGO AI.\n\nYou can chat with me using:\n💬 Text\n📷 Photos\n🎤 Voice\n\nAsk me anything about recycling or waste materials!", false);
+            addMessage("♻️ Hi! I'm RecycleGO AI.You can chat with me using:💬Text 📷Photos🎤Voice. Ask me anything about recycling or waste materials!", false);
         }
 
         editMessage.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                updateSendButtonState();
-            }
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        editMessage.setFocusableInTouchMode(true);
-        editMessage.setOnClickListener(v -> {
-            editMessage.requestFocus();
-            InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.showSoftInput(editMessage, InputMethodManager.SHOW_IMPLICIT);
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { updateSendButtonState(); }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
         btnSend.setOnClickListener(v -> {
@@ -213,17 +237,28 @@ public class AIAssistant extends BottomSheetDialogFragment {
             if (!message.isEmpty()) {
                 addMessage(message, true);
                 editMessage.setText("");
-                generateGeminiResponse(message);
+                generateGeminiResponse(message, 0);
             }
         });
 
         btnPlus.setOnClickListener(v -> showImageSourceOptions());
         btnMic.setOnClickListener(v -> checkPermissionAndStartVoiceInput());
-
+        
+        applyCustomTheme(view);
         updateSendButtonState();
     }
 
-    private void generateGeminiResponse(String userMessage) {
+    private void applyCustomTheme(View view) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int bottomColor = Color.parseColor(bottomColorCode);
+
+        if (welcomeText != null) welcomeText.setTextColor(bottomColor);
+        if (btnPlus != null) btnPlus.setColorFilter(bottomColor);
+        if (btnMic != null) btnMic.setColorFilter(bottomColor);
+    }
+
+    private void generateGeminiResponse(String userMessage, int retryCount) {
         if (model == null) {
             addMessage("AI not initialized. Please try again later.", false);
             return;
@@ -241,68 +276,44 @@ public class AIAssistant extends BottomSheetDialogFragment {
                 .build();
 
         ListenableFuture<GenerateContentResponse> response = model.generateContent(content);
-        Executor executor = Executors.newSingleThreadExecutor();
-
         Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
             @Override
             public void onSuccess(GenerateContentResponse result) {
-                String resultText = result.getText();
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> addMessage(resultText, false));
-                }
+                if (getActivity() != null) getActivity().runOnUiThread(() -> addMessage(result.getText(), false));
             }
 
             @Override
             public void onFailure(Throwable t) {
-                Log.e(TAG, "Gemini API Failure", t);
-
+                Log.e(TAG, "Gemini Failure (Attempt " + retryCount + ")", t);
                 if (getActivity() == null) return;
 
                 getActivity().runOnUiThread(() -> {
-
-                    String msg = (t.getMessage() != null) ? t.getMessage() : "";
-
-                    if (msg.contains("503") ||
-                            msg.contains("UNAVAILABLE") ||
-                            msg.contains("Service Unavailable")) {
-                        addMessage("⚠️ AI is busy right now. Please try again in a few seconds.", false);
+                    if (retryCount < ApiKeyManager.getApiKeysCount() - 1) {
+                        ApiKeyManager.rotateKey(requireContext());
+                        initializeModel();
+                        generateGeminiResponse(userMessage, retryCount + 1);
+                    } else {
+                        String errorMsg = t.getMessage() != null ? t.getMessage() : t.toString();
+                        if (errorMsg.contains("429"))
+                            addMessage("⏳ AI is taking a quick breath. Please try again in a few seconds!", false);
+                        else if (errorMsg.contains("401") || errorMsg.contains("403"))
+                            addMessage("🚫 API key not allowed or invalid. Check your setup.", false);
+                        else if (errorMsg.contains("404"))
+                            addMessage("❌ Model not found. Check model name.", false);
+                        else if (errorMsg.contains("400"))
+                            addMessage("❌ Invalid request. Please try rephrasing your input.", false);
+                        else if (errorMsg.toLowerCase().contains("timeout") || errorMsg.contains("SocketTimeoutException"))
+                            addMessage("⏳ Request timed out. Please check your internet and try again.", false);
+                        else if (errorMsg.contains("503") || errorMsg.contains("UNAVAILABLE") || errorMsg.contains("Service Unavailable"))
+                            addMessage("⚠️ AI is busy right now. Please try again in a few seconds.", false);
+                        else addMessage("❌ Unexpected error: Please try later.", false);
                     }
-
-                    else if (msg.contains("400") || msg.contains("INVALID_ARGUMENT")) {
-                        addMessage("❌ Invalid request. Please try rephrasing your input.", false);
-                    }
-
-                    else if (msg.contains("401") || msg.contains("403") || msg.contains("PERMISSION_DENIED")) {
-                        addMessage("🚫 API key not allowed or invalid. Check your setup.", false);
-                    }
-
-                    else if (msg.contains("404") || msg.contains("NOT_FOUND")) {
-                        addMessage("❌ Model not found. Check model name.", false);
-                    }
-
-                    else if (msg.toLowerCase().contains("timeout") || msg.contains("SocketTimeoutException")) {
-                        addMessage("⏳ Request timed out. Please check your internet and try again.", false);
-                    }
-
-                    else if (msg.toLowerCase().contains("unable to resolve host") ||
-                            msg.toLowerCase().contains("no address associated")) {
-                        addMessage("📡 No internet connection. Please check your network.", false);
-                    } else if (msg.contains("429") || msg.contains("quota")) {
-                            // Show a "User-Friendly" Toast message
-                            addMessage ("⏳ AI is taking a quick breath. Please try again in a few seconds!", false);
-                        }
-
-
-                    else {
-                        addMessage("❌ Unexpected error: Please try later.", false);
-                    }
-
                 });
             }
-        }, executor);
+        }, Executors.newSingleThreadExecutor());
     }
 
-    private void analyzeImageWithGemini(Bitmap bitmap) {
+    private void analyzeImageWithGemini(Bitmap bitmap, int retryCount) {
         if (model == null) {
             addMessage("AI not initialized. Please try again later.", false);
             return;
@@ -314,173 +325,108 @@ public class AIAssistant extends BottomSheetDialogFragment {
                 .build();
 
         ListenableFuture<GenerateContentResponse> response = model.generateContent(content);
-        Executor executor = Executors.newSingleThreadExecutor();
-
         Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
             @Override
             public void onSuccess(GenerateContentResponse result) {
-                String resultText = result.getText();
-                if (getActivity() != null) {
-                    String formatted = formatMessage(resultText);
-                    getActivity().runOnUiThread(() -> addMessage(formatted, false));
-                }
+                if (getActivity() != null) getActivity().runOnUiThread(() -> addMessage(result.getText(), false));
             }
 
             @Override
             public void onFailure(Throwable t) {
                 Log.e(TAG, "Image analysis failed", t);
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
+                if (getActivity() == null) return;
 
-                        String msg = (t.getMessage() != null) ? t.getMessage() : "";
-
-                        if (msg.contains("503") ||
-                                msg.contains("UNAVAILABLE") ||
-                                msg.contains("Service Unavailable")) {
-                            addMessage("⚠️ AI is busy right now. Please try again in a few seconds.", false);
-                        }
-
-                        else if (msg.contains("400") || msg.contains("INVALID_ARGUMENT")) {
-                            addMessage("❌ Invalid request. Please try rephrasing your input.", false);
-                        }
-
-                        else if (msg.contains("401") || msg.contains("403") || msg.contains("PERMISSION_DENIED")) {
+                getActivity().runOnUiThread(() -> {
+                    if (retryCount < ApiKeyManager.getApiKeysCount() - 1) {
+                        ApiKeyManager.rotateKey(requireContext());
+                        initializeModel();
+                        analyzeImageWithGemini(bitmap, retryCount + 1);
+                    } else {
+                        if (t.getMessage().contains("429"))
+                            addMessage("⏳ AI is taking a quick breath. Please try again in a few seconds!", false);
+                        else if (t.getMessage().contains("401") || t.getMessage().contains("403"))
                             addMessage("🚫 API key not allowed or invalid. Check your setup.", false);
-                        }
-
-                        else if (msg.contains("404") || msg.contains("NOT_FOUND")) {
+                        else if (t.getMessage().contains("404"))
                             addMessage("❌ Model not found. Check model name.", false);
-                        }
-
-                        else if (msg.toLowerCase().contains("timeout") || msg.contains("SocketTimeoutException")) {
+                        else if (t.getMessage().contains("400"))
+                            addMessage("❌ Invalid request. Please try rephrasing your input.", false);
+                        else if (t.getMessage().toLowerCase().contains("timeout") || t.getMessage().contains("SocketTimeoutException"))
                             addMessage("⏳ Request timed out. Please check your internet and try again.", false);
-                        }
-
-                        else if (msg.toLowerCase().contains("unable to resolve host") ||
-                                msg.toLowerCase().contains("no address associated")) {
+                        else if (t.getMessage().toLowerCase().contains("unable to resolve host") || t.getMessage().toLowerCase().contains("no address associated"))
                             addMessage("📡 No internet connection. Please check your network.", false);
-                        } else if (msg.contains("429") || msg.contains("quota")) {
-                            // Show a "User-Friendly" Toast message
-                            addMessage ("⏳ AI is taking a quick breath. Please try again in a few seconds!", false);
-                        }
-
-
-                        else {
-                            addMessage("❌ Unexpected error: Please try later.", false);
-                        }
-
-                    });
-                }
-
-
+                        else if (t.getMessage().contains("503") || t.getMessage().contains("UNAVAILABLE") || t.getMessage().contains("Service Unavailable"))
+                            addMessage("⚠️ AI is busy right now. Please try again in a few seconds.", false);
+                        else addMessage("❌ Unexpected error: Please try later.", false);
+                    }
+                });
             }
-        }, executor);
+        }, Executors.newSingleThreadExecutor());
     }
 
-    private String formatMessage(String text) {
-        return text.replaceAll("\\*\\*(.*?)\\*\\*", "<b>$1</b>");
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Dialog dialog = getDialog();
-        if (dialog != null && dialog.getWindow() != null) {
-            dialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        }
-    }
-
-    private void updateSendButtonState() {
-        boolean hasText = !editMessage.getText().toString().trim().isEmpty();
-        btnSend.setEnabled(hasText);
-    }
-
-    private void showImageSourceOptions() {
-        String[] options = {"Take Photo", "Choose from Gallery"};
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Select Image Source");
-        builder.setItems(options, (dialog, action) -> {
-            if (action == 0) checkPermissionAndLaunchCamera();
-            else pickImageLauncher.launch("image/*");
-        });
-        builder.show();
-    }
-
-    private void checkPermissionAndLaunchCamera() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            launchCamera();
-        } else {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
-        }
-    }
-
-    private void launchCamera() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        takePictureLauncher.launch(takePictureIntent);
-    }
-
-    private void checkPermissionAndStartVoiceInput() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            startVoiceInput();
-        } else {
-            recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
-        }
-    }
-
-    private void startVoiceInput() {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...");
-        try {
-            voiceInputLauncher.launch(intent);
-        } catch (ActivityNotFoundException a) {
-            Toast.makeText(getContext(), "Voice input not supported on this device", Toast.LENGTH_SHORT).show();
-        }
+    private void addMessage(String message, boolean isUser) {
+        ChatMessage msg = new ChatMessage(message, isUser);
+        if (isUser) msg.setUserProfilePicUrl(userProfilePicUrl);
+        chatMessages.add(msg);
+        adapter.notifyItemInserted(chatMessages.size() - 1);
+        recyclerView.post(() -> { if (scrollView != null) scrollView.fullScroll(View.FOCUS_DOWN); });
     }
 
     private void handleImageSelected(Bitmap bitmap) {
-        addMessageWithImage(bitmap);
-        analyzeImageWithGemini(bitmap);
+        ChatMessage msg = new ChatMessage("", true, bitmap);
+        msg.setUserProfilePicUrl(userProfilePicUrl);
+        chatMessages.add(msg);
+        adapter.notifyItemInserted(chatMessages.size() - 1);
+        analyzeImageWithGemini(bitmap, 0);
     }
 
     private void handleImageSelected(Uri uri) {
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), uri);
-            addMessageWithUri(uri);
-            analyzeImageWithGemini(bitmap);
+            handleImageSelected(bitmap);
         } catch (Exception e) {
             Toast.makeText(getContext(), "Failed to load image", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void addMessage(String message, boolean isUser) {
-        chatMessages.add(new ChatMessage(message, isUser));
-        updateList();
+    private void updateSendButtonState() {
+        if (editMessage == null || btnSend == null) return;
+        
+        String message = editMessage.getText().toString().trim();
+        boolean hasText = !message.isEmpty();
+        btnSend.setEnabled(hasText);
+        
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String themeColorCode = prefs.getString("bottom_color", "#265200");
+        int themeColor = Color.parseColor(themeColorCode);
+
+        if (hasText) {
+            btnSend.setBackgroundTintList(ColorStateList.valueOf(themeColor));
+            btnSend.setAlpha(1.0f);
+        } else {
+            // Light color (Gray) when empty
+            btnSend.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#E0E0E0")));
+            btnSend.setAlpha(0.6f);
+        }
     }
 
-    private void addMessageWithImage(Bitmap bitmap) {
-        chatMessages.add(new ChatMessage("", true, bitmap));
-        updateList();
+    private void showImageSourceOptions() {
+        String[] options = {"Take Photo", "Choose from Gallery"};
+        new AlertDialog.Builder(requireContext()).setTitle("Select Image").setItems(options, (d, i) -> {
+            if (i == 0) checkPermissionAndLaunchCamera(); else pickImageLauncher.launch("image/*");
+        }).show();
     }
-
-    private void addMessageWithUri(Uri uri) {
-        chatMessages.add(new ChatMessage("", true, uri));
-        updateList();
+    private void checkPermissionAndLaunchCamera() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) launchCamera();
+        else cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
     }
-
-    private void updateList() {
-        adapter.notifyItemInserted(chatMessages.size() - 1);
-        scrollToBottom();
+    private void launchCamera() { takePictureLauncher.launch(new Intent(MediaStore.ACTION_IMAGE_CAPTURE)); }
+    private void checkPermissionAndStartVoiceInput() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startVoiceInput();
+        else recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
     }
-
-    private void scrollToBottom() {
-        recyclerView.post(() -> {
-            if (scrollView != null) {
-                scrollView.fullScroll(View.FOCUS_DOWN);
-            }
-        });
+    private void startVoiceInput() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        try { voiceInputLauncher.launch(intent); } catch (Exception e) { Toast.makeText(getContext(), "Voice input not supported", Toast.LENGTH_SHORT).show(); }
     }
 }

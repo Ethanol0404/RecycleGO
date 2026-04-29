@@ -1,6 +1,7 @@
 package my.edu.utar.RecycleGO;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,6 +14,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,6 +32,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import org.osmdroid.api.IGeoPoint;
@@ -50,6 +54,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
@@ -77,9 +82,12 @@ public class Map extends Fragment {
 
     private String flow = "NORMAL";
     private String userRole = "User"; 
+    private String username = "User";
     private RecycleRequest draftRequest;
     private FirestoreManager firestoreManager;
     private List<String> selectedCenterIds = new ArrayList<>();
+    private List<String> userJoinedCenters = new ArrayList<>();
+    private List<String> userRequestedCenters = new ArrayList<>();
     private com.google.android.material.floatingactionbutton.FloatingActionButton btnAddCenter, btnConfirmSelection;
     private android.widget.ImageButton btnSearchAdd;
     private android.widget.EditText etSearch;
@@ -117,8 +125,9 @@ public class Map extends Fragment {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         firestoreManager = new FirestoreManager();
 
-        SharedPreferences prefs_role = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        userRole = prefs_role.getString("loggedInRole", "User");
+        SharedPreferences prefs_user = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userRole = prefs_user.getString("loggedInRole", "User");
+        username = prefs_user.getString("loggedInUsername", "User");
 
         if (getArguments() != null) {
             flow = getArguments().getString("flow", "NORMAL");
@@ -144,7 +153,8 @@ public class Map extends Fragment {
                              Bundle savedInstanceState) {
 
         if (getActivity() instanceof FrameActivity) {
-            ((FrameActivity) getActivity()).setHeaderVisible(true);
+            boolean isFromSignUp = "SIGNUP_TO_MAP".equals(flow);
+            ((FrameActivity) getActivity()).setHeaderVisible(!isFromSignUp);
         }
 
         View view = inflater.inflate(R.layout.activity_map, container, false);
@@ -263,8 +273,25 @@ public class Map extends Fragment {
         if (!selectedCenterIds.isEmpty()) {
             btnConfirmSelection.setVisibility(View.VISIBLE);
         }
+
+        applyCustomTheme(view);
         
         return view;
+    }
+
+    private void applyCustomTheme(View view) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int bottomColor = Color.parseColor(bottomColorCode);
+
+        if (btnAddCenter != null) btnAddCenter.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bottomColor));
+        if (btnConfirmSelection != null) btnConfirmSelection.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bottomColor));
+        if (btnSearchAdd != null) btnSearchAdd.setColorFilter(bottomColor);
+        
+        if (etSearch != null) {
+            etSearch.setTextColor(bottomColor);
+            etSearch.setHintTextColor(Color.argb(128, Color.red(bottomColor), Color.green(bottomColor), Color.blue(bottomColor)));
+        }
     }
 
     private void filterCenters(String query) {
@@ -325,9 +352,14 @@ public class Map extends Fragment {
             @Override
             public void onItemClick(RecycleCenter center) {
                 isMapMovingProgrammatically = true;
-                updateOverview(new GeoPoint(center.latitude, center.longitude));
+                GeoPoint gp = new GeoPoint(center.latitude, center.longitude);
+                updateOverview(gp);
                 isCarouselScrollingProgrammatically = true;
                 recyclerView.smoothScrollToPosition(centerList.indexOf(center));
+                
+                Marker m = centerToMarkerMap.get(center);
+                if (m != null) m.showInfoWindow();
+
                 mainHandler.postDelayed(() -> {
                     isMapMovingProgrammatically = false;
                     isCarouselScrollingProgrammatically = false;
@@ -335,8 +367,33 @@ public class Map extends Fragment {
             }
             @Override
             public void onRecycleClick(RecycleCenter center) {
-                if (userRole.equalsIgnoreCase("Admin")) handleJoin(center);
-                else handleSelection(center);
+                if (userRole.equalsIgnoreCase("Admin")) {
+                    if (userJoinedCenters.contains(center.id)) {
+                        showExitCenterDialog(center);
+                    } else if (userRequestedCenters.contains(center.id)) {
+                        Toast.makeText(getContext(), "Join request pending approval", Toast.LENGTH_SHORT).show();
+                    } else {
+                        handleJoinRequest(center);
+                    }
+                } else {
+                    handleSelection(center);
+                }
+            }
+
+            @Override
+            public void onViewRequestsClick(RecycleCenter center) {
+                Fragment f = new RecycleStatus();
+                Bundle args = new Bundle();
+                args.putString("adminCenterId", center.id);
+                args.putString("adminCenterName", center.name);
+                args.putBoolean("isJoinRequests", true); // Handle join requests specifically
+                f.setArguments(args);
+                getParentFragmentManager().beginTransaction().replace(R.id.fragment_container, f).addToBackStack(null).commit();
+            }
+
+            @Override
+            public void onDetailsClick(RecycleCenter center) {
+                showCenterDetails(center);
             }
         });
         adapter.setIsAdmin(userRole.equalsIgnoreCase("Admin") || "SIGNUP_TO_MAP".equals(flow));
@@ -344,27 +401,95 @@ public class Map extends Fragment {
         recyclerView.setAdapter(adapter);
     }
 
-    private void handleJoin(RecycleCenter center) {
+    private void showCenterDetails(RecycleCenter center) {
+        if (getContext() == null) return;
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View v = getLayoutInflater().inflate(R.layout.layout_map_bubble, null);
+        
+        ImageView img = v.findViewById(R.id.bubble_image);
+        TextView title = v.findViewById(R.id.bubble_title);
+        TextView desc = v.findViewById(R.id.bubble_description);
+        TextView subDesc = v.findViewById(R.id.bubble_subdescription);
+        
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int bottomColor = Color.parseColor(bottomColorCode);
+        
+        title.setText(center.name);
+        title.setTextColor(bottomColor);
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("Services: ").append(center.supportedServices).append("\n\n");
+        sb.append("Address: ").append(center.address).append("\n\n");
+        sb.append("Operating Hours: ").append(center.operatingHours).append("\n\n");
+        if (center.phoneNumber != null && !center.phoneNumber.isEmpty()) {
+            sb.append("Phone: ").append(center.phoneNumber);
+        }
+        
+        desc.setText(sb.toString());
+        
+        if (center.distance > 0) {
+            subDesc.setText(String.format("Distance: %.2f km", center.distance / 1000.0));
+        } else {
+            subDesc.setVisibility(View.GONE);
+        }
+        
+        if (center.pictureUrl != null && !center.pictureUrl.isEmpty()) {
+            img.setVisibility(View.VISIBLE);
+            Glide.with(img.getContext()).load(center.pictureUrl).placeholder(R.drawable.community).into(img);
+        } else {
+            img.setVisibility(View.GONE);
+        }
+        
+        v.setPadding(32, 32, 32, 64);
+        dialog.setContentView(v);
+        dialog.show();
+    }
+
+    private void handleJoinRequest(RecycleCenter center) {
         SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String uid = prefs.getString("loggedInUid", "");
-        if (uid.isEmpty()) {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (uid.isEmpty()) return;
 
-        firestoreManager.joinRecycleCenter(uid, center.id, new FirestoreManager.OnTaskCompleteListener() {
+        firestoreManager.submitJoinRequest(uid, username, center.id, center.name, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(getContext(), "Joined " + center.name, Toast.LENGTH_SHORT).show();
-                // When admin joins a center, ensure the primary recycleCenter field is also set
-                java.util.Map<String, Object> updates = new java.util.HashMap<>();
-                updates.put("recycleCenter", center.name);
-                firestoreManager.updateUser(uid, updates, null);
+                Toast.makeText(getContext(), "Join request submitted to " + center.name, Toast.LENGTH_SHORT).show();
                 loadAndPopulateData();
             }
             @Override
             public void onFailure(String error) {
-                Toast.makeText(getContext(), "Join failed: " + error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Request failed: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showExitCenterDialog(RecycleCenter center) {
+        new AlertDialog.Builder(getContext())
+                .setTitle("Exit Recycle Center")
+                .setMessage("You have already joined " + center.name + ". Do you want to exit the center?")
+                .setPositiveButton("Yes", (dialog, which) -> handleExit(center))
+                .setNegativeButton("No", null)
+                .show();
+    }
+
+    private void handleExit(RecycleCenter center) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String uid = prefs.getString("loggedInUid", "");
+        if (uid.isEmpty()) return;
+
+        firestoreManager.updateUser(uid, new HashMap<String, Object>() {{
+            put("joinedCenters", FieldValue.arrayRemove(center.id));
+        }}, new FirestoreManager.OnTaskCompleteListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(getContext(), "Exited " + center.name, Toast.LENGTH_SHORT).show();
+                loadAndPopulateData();
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Toast.makeText(getContext(), "Exit failed: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -506,7 +631,10 @@ public class Map extends Fragment {
                 @Override
                 public void onUserFetched(UserRecord user) {
                     if (user != null && adapter != null) {
-                        adapter.setJoinedCenters(user.getJoinedCenters());
+                        userJoinedCenters = user.getJoinedCenters();
+                        userRequestedCenters = user.getRequestedCenters();
+                        adapter.setJoinedCenters(userJoinedCenters);
+                        adapter.setRequestedCenters(userRequestedCenters);
                     }
                 }
                 @Override
@@ -577,7 +705,14 @@ public class Map extends Fragment {
             TextView title = v.findViewById(R.id.bubble_title);
             TextView desc = v.findViewById(R.id.bubble_description);
             TextView subDesc = v.findViewById(R.id.bubble_subdescription);
+            
+            SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+            String bottomColorCode = prefs.getString("bottom_color", "#265200");
+            int bottomColor = Color.parseColor(bottomColorCode);
+            
             title.setText(center.name);
+            title.setTextColor(bottomColor);
+            
             desc.setText(center.supportedServices);
             String snippet = "Hours: " + center.operatingHours;
             if (center.distance > 0) snippet += String.format("\nDistance: %.2f km", center.distance / 1000.0);
@@ -586,7 +721,11 @@ public class Map extends Fragment {
                 img.setVisibility(View.VISIBLE);
                 Glide.with(img.getContext()).load(center.pictureUrl).placeholder(R.drawable.community).into(img);
             } else img.setVisibility(View.GONE);
-            v.setOnClickListener(view -> close());
+            
+            v.setOnClickListener(view -> {
+                showCenterDetails(center);
+                close();
+            });
         }
         @Override
         public void onClose() {}
@@ -598,11 +737,16 @@ public class Map extends Fragment {
             mapView.getOverlays().remove(selectionLine);
             selectionLine = null;
         }
+        
+        SharedPreferences prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String bottomColorCode = prefs.getString("bottom_color", "#265200");
+        int bottomColor = Color.parseColor(bottomColorCode);
+
         if (currentUserLocation != null) {
             selectionLine = new Polyline();
             selectionLine.addPoint(new GeoPoint(currentUserLocation.getLatitude(), currentUserLocation.getLongitude()));
             selectionLine.addPoint(centerPoint);
-            selectionLine.getOutlinePaint().setColor(Color.parseColor("#4CAF50"));
+            selectionLine.getOutlinePaint().setColor(bottomColor);
             selectionLine.getOutlinePaint().setStrokeWidth(8.0f);
             mapView.getOverlays().add(selectionLine);
         }

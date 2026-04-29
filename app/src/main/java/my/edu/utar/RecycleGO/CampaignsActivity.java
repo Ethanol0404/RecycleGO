@@ -28,6 +28,7 @@ public class CampaignsActivity extends Fragment {
     private List<CampaignRecord> campaignList;
     private FirestoreManager firestoreManager;
     private FloatingActionButton btnAdd;
+    private String targetCampaignID = null;
 
     public CampaignsActivity() {
         // Required empty public constructor
@@ -40,6 +41,9 @@ public class CampaignsActivity extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        if (getArguments() != null) {
+            targetCampaignID = getArguments().getString("targetCampaignID");
+        }
         return inflater.inflate(R.layout.activity_campaigns, container, false);
     }
 
@@ -48,18 +52,14 @@ public class CampaignsActivity extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         firestoreManager = new FirestoreManager();
-
-        // 1. Initialize RecyclerView
         rvCampaigns = view.findViewById(R.id.rv_feed);
         rvCampaigns.setLayoutManager(new LinearLayoutManager(getContext()));
         rvCampaigns.setNestedScrollingEnabled(false);
 
-        // 2. Setup Adapter
         campaignList = new ArrayList<>();
         adapter = new CampaignAdapter(campaignList);
         rvCampaigns.setAdapter(adapter);
 
-        // 3. Initialize FAB and set click listener based on role
         btnAdd = view.findViewById(R.id.community_btnAdd);
         
         SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
@@ -81,7 +81,6 @@ public class CampaignsActivity extends Fragment {
             }
         }
 
-        // 4. Load Data from Firestore
         loadCampaigns();
     }
 
@@ -96,6 +95,16 @@ public class CampaignsActivity extends Fragment {
                     campaignList.addAll(list);
                 }
                 adapter.notifyDataSetChanged();
+
+                if (targetCampaignID != null) {
+                    for (int i = 0; i < campaignList.size(); i++) {
+                        if (campaignList.get(i).getId().equals(targetCampaignID)) {
+                            rvCampaigns.scrollToPosition(i);
+                            targetCampaignID = null;
+                            break;
+                        }
+                    }
+                }
             }
 
             @Override

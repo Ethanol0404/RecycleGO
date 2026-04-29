@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#D1E29B">
+    android:background="@android:color/transparent">
 
     <LinearLayout
         android:id="@+id/manage_header"
@@ -13,6 +13,7 @@
         android:padding="24dp">
 
         <TextView
+            android:id="@+id/tv_manage_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="My Communities"
@@ -21,6 +22,7 @@
             android:textColor="#1A2A4E" />
 
         <TextView
+            android:id="@+id/tv_manage_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Manage communities you have created"

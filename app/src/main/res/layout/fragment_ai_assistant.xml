@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/chat_bg">
+    android:background="@android:color/transparent">
 
     <!-- Scrollable Content Area -->
     <androidx.core.widget.NestedScrollView

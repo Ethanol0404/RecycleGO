@@ -1,18 +1,27 @@
 package my.edu.utar.RecycleGO;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -26,12 +35,14 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 
 import my.edu.utar.RecycleGO.database.FirestoreManager;
 import my.edu.utar.RecycleGO.database.UserRecord;
+import my.edu.utar.RecycleGO.utils.PrivacyPolicyHelper;
 
 public class SignUpActivity extends AppCompatActivity {
 
     private static final String TAG = "SignUpActivity";
     EditText etUsername, etEmail, etPassword, etRetypePassword, etRecycleCenter;
     Spinner spinnerSignUpRole;
+    CheckBox cbSignUpAgree;
     Button btnSignUp;
     TextView tvSignIn;
     FirestoreManager firestoreManager;
@@ -59,8 +70,30 @@ public class SignUpActivity extends AppCompatActivity {
         etRetypePassword = findViewById(R.id.etRetypePassword);
         etRecycleCenter = findViewById(R.id.etRecycleCenter);
         spinnerSignUpRole = findViewById(R.id.spinnerSignUpRole);
+        cbSignUpAgree = findViewById(R.id.cbSignUpAgree);
         btnSignUp = findViewById(R.id.btnSignUp);
         tvSignIn = findViewById(R.id.tvSignIn);
+
+        // Setup Hyperlink for Privacy Policy
+        String text = "I agree to the Privacy Policy";
+        SpannableString ss = new SpannableString(text);
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                PrivacyPolicyHelper.showPrivacyPolicy(SignUpActivity.this, cbSignUpAgree);
+            }
+
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setColor(Color.parseColor("#2D5D5B")); // Dark Green
+                ds.setUnderlineText(true);
+                ds.setFakeBoldText(true); // Bold
+            }
+        };
+        ss.setSpan(clickableSpan, 15, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        cbSignUpAgree.setText(ss);
+        cbSignUpAgree.setMovementMethod(LinkMovementMethod.getInstance());
 
         // Setup Spinner for Role selection
         String[] roles = {"User", "Admin"};
@@ -113,6 +146,11 @@ public class SignUpActivity extends AppCompatActivity {
                 return;
             }
 
+            if (!cbSignUpAgree.isChecked()) {
+                Toast.makeText(SignUpActivity.this, "Please read and agree to the Privacy Policy", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             if (role.equals("Admin") && recycleCenter.isEmpty()) {
                 Toast.makeText(SignUpActivity.this, "Please enter your Recycle Center Name", Toast.LENGTH_SHORT).show();
                 return;
@@ -146,6 +184,10 @@ public class SignUpActivity extends AppCompatActivity {
                         firestoreManager.saveUser(newUser, new FirestoreManager.OnTaskCompleteListener() {
                             @Override
                             public void onSuccess() {
+                                // Save agreement state
+                                SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                                sharedPreferences.edit().putBoolean("privacyAgreed", true).apply();
+
                                 Toast.makeText(SignUpActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
                                 finish();
                             }

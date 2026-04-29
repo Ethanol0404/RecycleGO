@@ -64,17 +64,21 @@ public class AddCenterFragment extends Fragment {
         center.supportedServices = etServices.getText().toString().trim();
         center.phoneNumber = etPhone.getText().toString().trim();
         center.pictureUrl = etPic.getText().toString().trim();
-
+        
+        // Generate a new ID if needed or let addRecycleCenter handle it
+        // To ensure it's "saved by ID" as requested:
         firestoreManager.addRecycleCenter(center, new FirestoreManager.OnTaskCompleteListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(getContext(), "Center added successfully", Toast.LENGTH_SHORT).show();
-                getParentFragmentManager().popBackStack();
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Center added successfully with ID: " + center.id, Toast.LENGTH_SHORT).show();
+                    getParentFragmentManager().popBackStack();
+                }
             }
 
             @Override
             public void onFailure(String error) {
-                Toast.makeText(getContext(), "Failed to add center: " + error, Toast.LENGTH_SHORT).show();
+                if (isAdded()) Toast.makeText(getContext(), "Failed to add center: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
